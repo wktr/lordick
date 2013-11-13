@@ -69,8 +69,8 @@ public class IrcClient {
         System.out.println("OnSend(): " + channel + " - " + message);
     }
 
-    public void OnIrcMessage(Channel channel, String raw, String prefix, String type, String destination, String message) {
-        System.out.println("OnIrcMessage(): " + channel + " - " + raw);
+    public void OnIrcMessage(Channel channel, IrcChat chat) {
+        System.out.println("OnIrcMessage(): " + channel + " - " + chat.getRaw());
     }
 
     public void OnDisconnect(Channel channel) {

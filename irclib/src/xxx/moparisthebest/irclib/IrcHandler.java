@@ -6,8 +6,8 @@ import xxx.moparisthebest.irclib.messages.Ping;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 import xxx.moparisthebest.util.ClassEnumerator;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,7 +16,7 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
     // http://mybuddymichael.com/writings/a-regular-expression-for-irc-messages.html
     public static Pattern IRC_PATTERN = Pattern.compile("^(?:[:](?<prefix>\\S+) )?(?<type>\\S+)(?: (?!:)(?<destination>.+?))?(?: [:](?<message>.+))?$");
 
-    private List<IrcMessage> messageHandlers = new ArrayList<IrcMessage>();
+    private List<IrcMessage> messageHandlers = new CopyOnWriteArrayList<IrcMessage>();
 
     public IrcHandler() {
         for (Class c : ClassEnumerator.getClassesForPackage(Ping.class.getPackage())) {
@@ -36,12 +36,13 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
             // todo: print error or something
             return;
         }
+        IrcChat chat = new IrcChat(message, m.group("prefix"), m.group("type"), m.group("destination"), m.group("message"));
         for (IrcMessage ircMessage : messageHandlers) {
-            if (ircMessage.shouldHandle(ctx, message, m.group("prefix"), m.group("type"), m.group("destination"), m.group("message"))) {
-                ircMessage.handleMessage(ctx, message, m.group("prefix"), m.group("type"), m.group("destination"), m.group("message"));
+            if (ircMessage.shouldHandle(ctx, chat)) {
+                ircMessage.handleMessage(ctx, chat);
             }
         }
-        IrcClient.getIrcClient(ctx.channel()).OnIrcMessage(ctx.channel(), message, m.group("prefix"), m.group("type"), m.group("destination"), m.group("message"));
+        IrcClient.getIrcClient(ctx.channel()).OnIrcMessage(ctx.channel(), chat);
     }
 
     @Override
@@ -52,7 +53,7 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         UserProperties userprops = IrcClient.getUserProperties(ctx.channel());
-        ctx.write("NICK :" + userprops.getNickname());
+        ctx.write("NICK " + userprops.getNickname());
         ctx.writeAndFlush("USER " + userprops.getIdent() + " 0 * :" + userprops.getRealname());
     }
 }
