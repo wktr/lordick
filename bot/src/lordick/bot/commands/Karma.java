@@ -1,6 +1,6 @@
 package lordick.bot.commands;
 
-import lordick.bot.Command;
+import lordick.bot.BotCommand;
 
-public class Karma implements Command {
+public class Karma implements BotCommand {
 }

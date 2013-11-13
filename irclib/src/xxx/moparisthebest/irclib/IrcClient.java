@@ -3,6 +3,7 @@ package xxx.moparisthebest.irclib;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -15,12 +16,24 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class IrcClient {
 
-    public static final AttributeKey<UserProperties> USERPROPS_ATTR = AttributeKey.valueOf("UserProperties.attr");
-    public static final AttributeKey<NetworkProperties> NETPROPS_ATTR = AttributeKey.valueOf("NetworkProperties.attr");
-    public static final AttributeKey<IrcClient> CLIENT_ATTR = AttributeKey.valueOf("IrcClient.attr");
+    private static final AttributeKey<UserProperties> USERPROPS_ATTR = AttributeKey.valueOf("UserProperties.attr");
+    private static final AttributeKey<NetworkProperties> NETPROPS_ATTR = AttributeKey.valueOf("NetworkProperties.attr");
+    private static final AttributeKey<IrcClient> CLIENT_ATTR = AttributeKey.valueOf("IrcClient.attr");
 
-    EventLoopGroup group = new NioEventLoopGroup();
-    List<Channel> connections = new CopyOnWriteArrayList<Channel>();
+    public static IrcClient getIrcClient(Channel channel) {
+        return channel.attr(CLIENT_ATTR).get();
+    }
+
+    public static NetworkProperties getNetworkProperties(Channel channel) {
+        return channel.attr(NETPROPS_ATTR).get();
+    }
+
+    public static UserProperties getUserProperties(Channel channel) {
+        return channel.attr(USERPROPS_ATTR).get();
+    }
+
+    private EventLoopGroup group = new NioEventLoopGroup();
+    private List<Channel> connections = new CopyOnWriteArrayList<Channel>();
 
     public List<Channel> getConnections() {
         return connections;
@@ -34,11 +47,16 @@ public class IrcClient {
     public Channel connect(UserProperties up, NetworkProperties np) {
         System.out.printf("Connecting to %s:%d ... \r\n", np.getHost(), np.getPort());
         Bootstrap b = new Bootstrap();
-        // todo: some constructor to ircinitialiser for ssl enabled in pipeline
-        b.group(group).channel(NioSocketChannel.class).handler(new IrcInitializer());
+        b.group(group).channel(NioSocketChannel.class).handler(new IrcInitializer(this, np.isSSL()));
         ChannelFuture cf = b.connect(np.getHost(), np.getPort());
-        // todo: add something to the future to reconnect/whatever
-        // todo: add something to the future to remove it from connection list and fire some OnDisconnect?
+        cf.channel().closeFuture().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                Channel channel = channelFuture.channel();
+                connections.remove(channel);
+                OnDisconnect(channel);
+            }
+        });
         Channel chan = cf.channel();
         chan.attr(USERPROPS_ATTR).set(up);
         chan.attr(NETPROPS_ATTR).set(np);
@@ -47,8 +65,20 @@ public class IrcClient {
         return chan;
     }
 
-    public void OnIrcMessage(Channel channel, String raw, String prefix, String type, String destination, String message) {
+    public void OnSend(Channel channel, String message) {
+        System.out.println("OnSend(): " + channel + " - " + message);
+    }
 
+    public void OnIrcMessage(Channel channel, String raw, String prefix, String type, String destination, String message) {
+        System.out.println("OnIrcMessage(): " + channel + " - " + raw);
+    }
+
+    public void OnDisconnect(Channel channel) {
+        System.out.println("OnDisconnect(): " + channel);
+    }
+
+    public void OnException(Channel channel, Throwable cause) {
+        System.out.println("OnException(): " + channel + " - " + cause.getMessage());
     }
 
 }
