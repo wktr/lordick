@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import lordick.bot.BotCommand;
 import xxx.moparisthebest.irclib.IrcChat;
 import xxx.moparisthebest.irclib.IrcClient;
+import xxx.moparisthebest.util.StringUtil;
 
 import java.sql.*;
 import java.util.regex.Matcher;
@@ -35,10 +36,10 @@ public class Karma extends BotCommand {
         }
     }
 
-    private Pattern command = Pattern.compile("(?:karma|rep)(?: for)?:?(?: (\\S+))");
-    private Pattern karma = Pattern.compile("(?:(\\S+)\\s?\\+\\++)");
-    private String[] commandList = {"karma", "rep"};
-    private String help = command.pattern() + " - shows karma score for name, or name++ increases karma score for name";
+    private static String[] commandList = {"karma", "rep"};
+    private static Pattern command = Pattern.compile("(?:" + StringUtil.join("|", commandList) + ")(?: for)?:?(?: (\\S+))", Pattern.CASE_INSENSITIVE);
+    private static Pattern karma = Pattern.compile("(?:(\\S+)\\s?\\+\\++)");
+    private static String help = command.pattern() + " - shows karma score for name, or name++ increases karma score for name";
 
     @Override
     public boolean shouldHandleCommand(IrcClient client, Channel channel, IrcChat chat) {
@@ -56,9 +57,9 @@ public class Karma extends BotCommand {
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
                     int score = rs.getInt(1);
-                    IrcClient.sendChat(channel, chat.getDestination(), "karma for " + nick + ": " + score);
+                    IrcClient.sendChat(channel, chat.getDestination(), "karma for %s: %i", nick, score);
                 } else {
-                    IrcClient.sendChat(channel, chat.getDestination(), "no karma for " + nick);
+                    IrcClient.sendChat(channel, chat.getDestination(), "no karma for %s", nick);
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -78,7 +79,7 @@ public class Karma extends BotCommand {
 
     @Override
     public boolean shouldHandleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        return chat.getType().equalsIgnoreCase("PRIVMSG") && chat.getMessage().contains("++");
+        return chat.getType().equalsIgnoreCase("PRIVMSG") && chat.getDestination().startsWith("#") && chat.getMessage().contains("++");
     }
 
     @Override

@@ -65,6 +65,10 @@ public class IrcClient {
         return chan;
     }
 
+    public static void sendChat(Channel channel, String destination, String message, Object... format) {
+        sendChat(channel, destination, String.format(message, format));
+    }
+
     public static void sendChat(Channel channel, String destination, String message) {
         channel.writeAndFlush("PRIVMSG " + destination + " :" + message);
     }

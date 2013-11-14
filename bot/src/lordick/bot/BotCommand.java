@@ -6,13 +6,27 @@ import xxx.moparisthebest.irclib.IrcClient;
 
 public abstract class BotCommand {
 
-    public abstract boolean shouldHandleCommand(IrcClient client, Channel channel, IrcChat chat);
+    public boolean shouldHandleCommand(IrcClient client, Channel channel, IrcChat chat) {
+        return false;
+    }
 
-    public abstract void handleCommand(IrcClient client, Channel channel, IrcChat chat);
+    public void handleCommand(IrcClient client, Channel channel, IrcChat chat) {
+        // empty
+    }
+
+    public void unhandledCommand(IrcClient client, Channel channel, IrcChat chat) {
+
+    }
 
     public abstract String getHelp();
 
-    public abstract String[] getCommandList();
+    public String[] getCommandList() {
+        return null;
+    }
+
+    public String getCommand() {
+        return null;
+    }
 
     public boolean shouldHandleMessage(IrcClient client, Channel channel, IrcChat chat) {
         return false;
@@ -20,6 +34,10 @@ public abstract class BotCommand {
 
     public void handleMessage(IrcClient client, Channel channel, IrcChat chat) {
         // empty
+    }
+
+    public void unhandledMessage(IrcClient client, Channel channel, IrcChat chat) {
+
     }
 
 }

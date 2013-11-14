@@ -14,6 +14,8 @@ public class Markov extends BotCommand {
 
     private Connection connection;
     private Random randy = new Random();
+    private int replyrate = 2;
+    private int replynick = 100;
 
     public Markov() {
         try {
@@ -37,50 +39,84 @@ public class Markov extends BotCommand {
         }
     }
 
-    private String[] commandList = {"chat about"};
-    private Pattern command = Pattern.compile(commandList[0] + ":?\\s*(\\S+)(?: (\\S+))?");
-    private String help = commandList[0] + " context - builds a markov string given a context";
+    private static Pattern command = Pattern.compile("chat\\s(\\S+):?\\s*(\\S+)?(?: (\\S+))?", Pattern.CASE_INSENSITIVE);
 
     @Override
     public boolean shouldHandleCommand(IrcClient client, Channel channel, IrcChat chat) {
         return chat.getMessage().matches(command.pattern());
     }
 
+    private int s2i(String s, int min, int max) {
+        try {
+            int i = Integer.parseInt(s);
+            if (i < min) {
+                return min;
+            } else if (i > max) {
+                return max;
+            } else {
+                return i;
+            }
+        } catch (Exception ignored) {
+
+        }
+        return min;
+    }
+
     @Override
     public void handleCommand(IrcClient client, Channel channel, IrcChat chat) {
         Matcher m = command.matcher(chat.getMessage());
         if (m.matches()) {
-            String markov = markov_find(m.group(1), m.group(2));
-            if (markov == null) {
-                IrcClient.sendChat(channel, chat.getDestination(), "I can't :(");
+            String cmd = m.group(1);
+            if (cmd.equalsIgnoreCase("about")) {
+                if (m.group(2) == null) {
+                    IrcClient.sendChat(channel, chat.getDestination(), "Need context");
+                } else if (randy.nextFloat() * 100 <= replynick) {
+                    String markov = markov_find(m.group(2), m.group(3));
+                    if (markov == null) {
+                        IrcClient.sendChat(channel, chat.getDestination(), "I can't :(");
+                    } else {
+                        IrcClient.sendChat(channel, chat.getDestination(), markov);
+                    }
+                }
+            } else if (cmd.equalsIgnoreCase("replyrate")) {
+                if (m.group(2) == null) {
+                    IrcClient.sendChat(channel, chat.getDestination(), "Reply rate is: %d%%", replyrate);
+                } else {
+                    replyrate = s2i(m.group(2), 0, 100);
+                    IrcClient.sendChat(channel, chat.getDestination(), "Reply rate set to: %d%%", replyrate);
+                }
+            } else if (cmd.equalsIgnoreCase("replynick")) {
+                if (m.group(2) == null) {
+                    IrcClient.sendChat(channel, chat.getDestination(), "Reply nick is: %d%%", replynick);
+                } else {
+                    replynick = s2i(m.group(2), 0, 100);
+                    IrcClient.sendChat(channel, chat.getDestination(), "Reply nick set to: %d%%", replynick);
+                }
             } else {
-                IrcClient.sendChat(channel, chat.getDestination(), markov);
+                IrcClient.sendChat(channel, chat.getDestination(), "Unknown command: %d%%", cmd);
             }
         }
     }
 
     @Override
     public String getHelp() {
-        return help;
+        return "Usage: chat [about|replynick|replyrate] <context>";
     }
 
     @Override
-    public String[] getCommandList() {
-        return commandList;
+    public String getCommand() {
+        return "chat";
     }
 
     @Override
-    public boolean shouldHandleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        return chat.getType().equalsIgnoreCase("PRIVMSG") && chat.getDestination().startsWith("#");
-    }
-
-    @Override
-    public void handleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        markov_learn(chat.getMessage());
-        if ((Math.random() * 100.0D) < 2.0D) {
-            String markov = markov_generate();
-            if (markov != null) {
-                IrcClient.sendChat(channel, chat.getDestination(), markov);
+    public void unhandledMessage(IrcClient client, Channel channel, IrcChat chat) {
+        if (chat.getType().equalsIgnoreCase("PRIVMSG") && chat.getDestination().startsWith("#")) {
+            markov_learn(chat.getMessage());
+            if (randy.nextFloat() * 100 <= replyrate) {
+                String markov = markov_generate();
+                if (markov != null) {
+                    IrcClient.sendChat(channel, chat.getDestination(), markov);
+                }
             }
         }
     }
