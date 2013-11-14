@@ -38,7 +38,7 @@ public class ClassEnumerator {
                 className = pkgname + '.' + fileName.substring(0, fileName.length() - 6);
             }
             log("FileName '" + fileName + "'  =>  class '" + className + "'");
-            if (className != null) {
+            if (className != null && !className.contains("$")) {
                 classes.add(loadClass(className));
             }
             File subdir = new File(directory, fileName);
@@ -68,7 +68,7 @@ public class ClassEnumerator {
                 className = entryName.replace('/', '.').replace('\\', '.').replace(".class", "");
             }
             log("JarEntry '" + entryName + "'  =>  class '" + className + "'");
-            if (className != null) {
+            if (className != null && !className.contains("$")) {
                 classes.add(loadClass(className));
             }
         }
