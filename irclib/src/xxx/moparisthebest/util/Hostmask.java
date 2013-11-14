@@ -5,9 +5,9 @@ import java.util.regex.Pattern;
 
 public class Hostmask {
 
-    public static Pattern HOSTMASK_PATTERN = Pattern.compile(":?(?<nick>[^!]+)(?:[!](?<ident>[^@]+))?(?:[@](?<host>\\S+))?");
+    private static Pattern HOSTMASK_PATTERN = Pattern.compile(":?(?<nick>[^!]+)(?:[!](?<ident>[^@]+))?(?:[@](?<host>\\S+))?");
 
-    public static String get(String mask, String group) {
+    private static String get(String mask, String group) {
         Matcher m = HOSTMASK_PATTERN.matcher(mask);
         if (m.matches()) {
             return m.group(group);

@@ -18,4 +18,10 @@ public class StringUtil {
         return sb.toString();
     }
 
+    public static String between(String str, String start, String end) {
+        int s = str.indexOf(start) + start.length();
+        int e = str.indexOf(end, s);
+        return str.substring(s, e);
+    }
+
 }

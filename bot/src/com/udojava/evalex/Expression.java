@@ -485,7 +485,7 @@ public class Expression {
             @Override
             public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
                 /*-
-				 * Thanks to Gene Marin:
+                 * Thanks to Gene Marin:
 				 * http://stackoverflow.com/questions/3579779/how-to-do-a-fractional-power-on-bigdecimal-in-java
 				 */
                 int signOf2 = v2.signum();
@@ -692,8 +692,8 @@ public class Expression {
         addFunction(new Function("SQRT", 1) {
             @Override
             public BigDecimal eval(List<BigDecimal> parameters) {
-				/*
-				 * From The Java Programmers Guide To numerical Computing
+                /*
+                 * From The Java Programmers Guide To numerical Computing
 				 * (Ronald Mak, 2003)
 				 */
                 BigDecimal x = parameters.get(0);
