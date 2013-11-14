@@ -65,6 +65,10 @@ public class IrcClient {
         return chan;
     }
 
+    public static void sendChat(Channel channel, String destination, String message) {
+        channel.writeAndFlush("PRIVMSG " + destination + " :" + message);
+    }
+
     public void OnSend(Channel channel, String message) {
         System.out.println("OnSend(): " + channel + " - " + message);
     }
@@ -79,6 +83,7 @@ public class IrcClient {
 
     public void OnException(Channel channel, Throwable cause) {
         System.out.println("OnException(): " + channel + " - " + cause.getMessage());
+        cause.printStackTrace();
     }
 
 }

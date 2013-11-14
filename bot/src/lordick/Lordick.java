@@ -22,32 +22,38 @@ public class Lordick extends IrcClient {
     private Map<String, BotCommand> commandList = new ConcurrentHashMap<String, BotCommand>();
     private String commandListString;
 
+    static {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void loadCommandHandlers() {
         commandHandlers.clear();
+        commandListString = null;
         for (Class c : ClassEnumerator.getClassesForPackage(Karma.class.getPackage())) {
             try {
                 BotCommand command = (BotCommand) c.newInstance();
                 commandHandlers.add(command);
                 for (String s : command.getCommandList()) {
                     commandList.put(s, command);
+                    if (commandListString == null) {
+                        commandListString = s;
+                    } else {
+                        commandListString += "," + s;
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            }
-        }
-        commandListString = null;
-        for (String s : commandList.keySet()) {
-            if (commandListString == null) {
-                commandListString = s;
-            } else {
-                commandListString += "," + s;
             }
         }
     }
 
     public void start() {
         loadCommandHandlers();
-        UserProperties up = new UserProperties("lordick", "lordick", "lordick", null, "#mopar");
+        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, "#lordick");
         NetworkProperties np = new NetworkProperties("irc.moparisthebest.xxx", 6667, false);
         connect(up, np);
     }
@@ -56,18 +62,22 @@ public class Lordick extends IrcClient {
 
     @Override
     public void OnIrcMessage(Channel channel, IrcChat chat) {
+        super.OnIrcMessage(channel, chat);
+        if (!chat.getType().equalsIgnoreCase("PRIVMSG") || !chat.getDestination().startsWith("#")) {
+            return;
+        }
         UserProperties up = IrcClient.getUserProperties(channel);
-        if (chat.getDestination().startsWith("#") && chat.getMessage().matches("^" + up.getNickname() + ":? ")) {
+        if (chat.getMessage().matches("^" + up.getNickname() + ":? .*")) {
             String text = chat.getMessage().substring(chat.getMessage().indexOf(' ') + 1);
             Matcher m = help.matcher(text);
             if (m.matches()) {
                 String command = m.group("command");
                 if (command == null) {
-                    channel.write("Help available for: " + commandList);
+                    IrcClient.sendChat(channel, chat.getDestination(), "Help available for: " + commandListString);
                 } else if (!commandList.containsKey(command)) {
-                    channel.write("No help for command: " + command);
+                    IrcClient.sendChat(channel, chat.getDestination(), "No help for command: " + command);
                 } else {
-                    channel.write(command + ": " + commandList.get(command).getHelp());
+                    IrcClient.sendChat(channel, chat.getDestination(), command + ": " + commandList.get(command).getHelp());
                 }
             } else {
                 chat.setMessage(text);
