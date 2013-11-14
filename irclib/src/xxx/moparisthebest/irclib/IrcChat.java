@@ -35,4 +35,8 @@ public class IrcChat {
     public void setMessage(String message) {
         this.message = message;
     }
+
+    public boolean isChannel() {
+        return getType().equalsIgnoreCase("PRIVMSG") && getDestination().startsWith("#");
+    }
 }

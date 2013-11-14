@@ -29,7 +29,7 @@ public class Sed extends BotCommand {
 
     @Override
     public boolean shouldHandleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        if (chat.getType().equalsIgnoreCase("PRIVMSG") && chat.getDestination().startsWith("#")) {
+        if (chat.isChannel()) {
             boolean sedmatch = chat.getMessage().matches(SED_REGEX.pattern());
             if (!sedmatch) {
                 lastMessage.put(chat.getPrefix(), chat.getMessage());

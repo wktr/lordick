@@ -79,7 +79,7 @@ public class Karma extends BotCommand {
 
     @Override
     public boolean shouldHandleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        return chat.getType().equalsIgnoreCase("PRIVMSG") && chat.getDestination().startsWith("#") && chat.getMessage().contains("++");
+        return chat.isChannel() && chat.getMessage().contains("++");
     }
 
     @Override

@@ -72,7 +72,7 @@ public class Lordick extends IrcClient {
     @Override
     public void OnIrcMessage(Channel channel, IrcChat chat) {
         super.OnIrcMessage(channel, chat);
-        if (!chat.getType().equalsIgnoreCase("PRIVMSG") || !chat.getDestination().startsWith("#")) {
+        if (!chat.isChannel()) {
             return;
         }
         UserProperties up = IrcClient.getUserProperties(channel);
@@ -99,7 +99,7 @@ public class Lordick extends IrcClient {
                 }
                 if (!handled) {
                     for (BotCommand botCommand : commandHandlers) {
-                            botCommand.unhandledCommand(this, channel, chat);
+                        botCommand.unhandledCommand(this, channel, chat);
                     }
                 }
             }

@@ -110,7 +110,7 @@ public class Markov extends BotCommand {
 
     @Override
     public void unhandledMessage(IrcClient client, Channel channel, IrcChat chat) {
-        if (chat.getType().equalsIgnoreCase("PRIVMSG") && chat.getDestination().startsWith("#")) {
+        if (chat.isChannel()) {
             markov_learn(chat.getMessage());
             if (randy.nextFloat() * 100 <= replyrate) {
                 String markov = markov_generate();
