@@ -19,7 +19,7 @@ public class Markov extends BotCommand {
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:markov.db");
             //connection.setAutoCommit(false);
-            connection.createStatement().executeUpdate("create table if not exists markov (seed_a TEXT, seed_b TEXT, seed_c TEXT)");
+            connection.createStatement().executeUpdate("create table if not exists markov (seed_a TEXT, seed_b TEXT, seed_c TEXT, unique(seed_a, seed_b, seed_c) on conflict ignore)");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -91,18 +91,11 @@ public class Markov extends BotCommand {
         String[] words = input.split(" ");
         for (String seed3 : words) {
             try {
-                PreparedStatement ps = connection.prepareStatement("select 1 from markov where seed_a = ? and seed_b = ? and seed_c = ?");
+                PreparedStatement ps = connection.prepareStatement("insert into markov (seed_a, seed_b, seed_c) values (?, ?, ?)");
                 ps.setString(1, seed1);
                 ps.setString(2, seed2);
                 ps.setString(3, seed3);
-                ResultSet rs = ps.executeQuery();
-                if (!rs.next()) {
-                    ps = connection.prepareStatement("insert into markov (seed_a, seed_b, seed_c) values (?, ?, ?)");
-                    ps.setString(1, seed1);
-                    ps.setString(2, seed2);
-                    ps.setString(3, seed3);
-                    ps.executeUpdate();
-                }
+                ps.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -114,15 +107,9 @@ public class Markov extends BotCommand {
     private String markov_find(String seed1, String seed2) {
         try {
             PreparedStatement ps;
-            if (seed2 == null) {
-                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? order by random() limit 1");
-            } else {
-                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_b = ? order by random() limit 1");
-            }
+            ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_b = ? order by random() limit 1");
             ps.setString(1, seed1);
-            if (seed2 != null) {
-                ps.setString(2, seed2);
-            }
+            ps.setString(2, (seed2 == null ? seed1 : seed2));
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 String found1 = rs.getString(1);
@@ -151,7 +138,7 @@ public class Markov extends BotCommand {
     }
 
     private String markov_generate(String seed1, String seed2) {
-        System.out.printf("Start seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
+        //System.out.printf("Start seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
         int wordcount = randy.nextInt(20) + 10;
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < wordcount; i++) {
@@ -165,7 +152,7 @@ public class Markov extends BotCommand {
             result.append(seed3);
             seed1 = seed2;
             seed2 = seed3;
-            System.out.printf("Seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
+            //System.out.printf("Seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
         }
         if (result.length() > 0) {
             return result.toString();
