@@ -2,13 +2,14 @@ package xxx.moparisthebest.irclib;
 
 public class IrcChat {
 
-    private String raw, prefix, type, destination, message;
+    private String raw, prefix, type, destination, destParams, message;
 
-    public IrcChat(String raw, String prefix, String type, String destination, String message) {
+    public IrcChat(String raw, String prefix, String type, String destination, String destParams, String message) {
         this.raw = raw;
         this.prefix = prefix;
         this.type = type;
         this.destination = destination;
+        this.destParams = destParams;
         this.message = message;
     }
 
@@ -26,6 +27,10 @@ public class IrcChat {
 
     public String getDestination() {
         return destination;
+    }
+
+    public String getDestParams() {
+        return destParams;
     }
 
     public String getMessage() {
