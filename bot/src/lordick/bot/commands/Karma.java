@@ -57,7 +57,7 @@ public class Karma extends BotCommand {
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
                     int score = rs.getInt(1);
-                    IrcClient.sendChat(channel, chat.getDestination(), "karma for %s: %i", nick, score);
+                    IrcClient.sendChat(channel, chat.getDestination(), "karma for %s: %d", nick, score);
                 } else {
                     IrcClient.sendChat(channel, chat.getDestination(), "no karma for %s", nick);
                 }
