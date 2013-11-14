@@ -129,7 +129,16 @@ public class Markov extends BotCommand {
             if (rs.next()) {
                 String found1 = rs.getString(1);
                 String found2 = rs.getString(2);
-                return markov_generate(found1, found2);
+                String markov = markov_generate(found1, found2);
+                if (markov != null) {
+                    if (!found2.equalsIgnoreCase("\n")) {
+                        markov = found2 + " " + markov;
+                    }
+                    if (!found1.equalsIgnoreCase("\n")) {
+                        markov = found1 + " " + markov;
+                    }
+                    return markov;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
