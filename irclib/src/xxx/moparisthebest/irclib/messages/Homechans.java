@@ -16,7 +16,7 @@ public class Homechans implements IrcMessage {
     @Override
     public void handleMessage(ChannelHandlerContext ctx, IrcChat chat) {
         UserProperties up = IrcClient.getUserProperties(ctx.channel());
-        for(String s : up.getHomeChannels()) {
+        for (String s : up.getHomeChannels()) {
             ctx.write("JOIN " + s);
         }
         ctx.flush();

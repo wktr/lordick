@@ -16,9 +16,8 @@ public class Karma extends BotCommand {
     public Karma() {
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:karma.db");
-            connection.setAutoCommit(false);
-            Statement statement = connection.createStatement();
-            statement.executeUpdate("create table if not exists karma(name TEXT UNIQUE, score INTEGER);");
+            //connection.setAutoCommit(false);
+            connection.createStatement().executeUpdate("create table if not exists karma (name TEXT UNIQUE, score INTEGER)");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -27,7 +26,7 @@ public class Karma extends BotCommand {
     @Override
     protected void finalize() throws Throwable {
         try {
-            if(connection != null) {
+            if (connection != null) {
                 connection.commit();
                 connection.close();
             }
@@ -36,8 +35,8 @@ public class Karma extends BotCommand {
         }
     }
 
-    private static Pattern command = Pattern.compile("(?:karma|rep)(?: for)?:?(?: (\\S+))");
-    private static Pattern karma = Pattern.compile("(?:([^ ]+)[ ]?\\+\\++)");
+    private Pattern command = Pattern.compile("(?:karma|rep)(?: for)?:?(?: (\\S+))");
+    private Pattern karma = Pattern.compile("(?:(\\S+)\\s?\\+\\++)");
     private String[] commandList = {"karma", "rep"};
     private String help = command.pattern() + " - shows karma score for name, or name++ increases karma score for name";
 
