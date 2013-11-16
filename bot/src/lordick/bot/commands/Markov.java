@@ -68,7 +68,7 @@ public class Markov extends BotCommand {
         if (m.matches()) {
             String cmd = m.group(1);
             if (cmd.equalsIgnoreCase("about")) {
-                if (m.group(2) == null) {
+                if (m.group(2) == null || m.group(2).length() == 0) {
                     IrcClient.sendChat(channel, chat.getDestination(), "Need context");
                 } else if (randy.nextFloat() * 100 <= replynick) {
                     String markov = markov_find(m.group(2), m.group(3));

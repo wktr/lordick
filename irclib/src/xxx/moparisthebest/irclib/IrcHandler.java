@@ -14,8 +14,7 @@ import java.util.regex.Pattern;
 public class IrcHandler extends SimpleChannelInboundHandler<String> {
 
     // http://mybuddymichael.com/writings/a-regular-expression-for-irc-messages.html
-    //public static Pattern IRC_PATTERN = Pattern.compile("^(?:[:](?<prefix>\\S+) )?(?<type>\\S+)(?: (?!:)(?<destination>.+?))?(?: [:](?<message>.+))?$");
-    public static Pattern IRC_PATTERN = Pattern.compile("^(?:[:](?<prefix>\\S+) )?(?<type>\\S+)(?: (?!:)(?<destination>\\S+?))?(?: (?<destparams>.+?)?)(?: [:](?<message>.+)?)?$");
+    public static Pattern IRC_PATTERN = Pattern.compile("^(?:[:](?<prefix>\\S+) )?(?<type>\\S+)(?: (?!:)(?<destination>.+?))?(?: [:](?<message>.+))?$");
 
     private List<IrcMessage> messageHandlers = new CopyOnWriteArrayList<IrcMessage>();
 
@@ -37,7 +36,7 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
             // todo: print error or something
             return;
         }
-        IrcChat chat = new IrcChat(message, m.group("prefix"), m.group("type"), m.group("destination"), m.group("destparams"), m.group("message"));
+        IrcChat chat = new IrcChat(message, m.group("prefix"), m.group("type"), m.group("destination"), m.group("message"));
         for (IrcMessage ircMessage : messageHandlers) {
             if (ircMessage.shouldHandle(ctx, chat)) {
                 ircMessage.handleMessage(ctx, chat);
@@ -56,5 +55,10 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
         UserProperties userprops = IrcClient.getUserProperties(ctx.channel());
         ctx.write("NICK " + userprops.getNickname());
         ctx.writeAndFlush("USER " + userprops.getIdent() + " 0 * :" + userprops.getRealname());
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        ctx.close(); // hope this fires the closeFuture in IrcClient.connect
     }
 }
