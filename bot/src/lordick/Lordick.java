@@ -76,7 +76,7 @@ public class Lordick extends IrcClient {
             return;
         }
         UserProperties up = IrcClient.getUserProperties(channel);
-        if (chat.getMessage().matches("^" + up.getNickname() + ":? .*")) {
+        if (chat.getMessage().matches("^" + up.getNickname() + "[:,]* .+")) {
             String text = chat.getMessage().substring(chat.getMessage().indexOf(' ') + 1);
             Matcher m = help.matcher(text);
             if (m.matches()) {
