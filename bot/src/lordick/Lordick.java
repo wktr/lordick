@@ -62,12 +62,12 @@ public class Lordick extends IrcClient {
 
     public void start() {
         loadCommandHandlers();
-        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, "#lordick");
+        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, "#lordick", "#mopar");
         NetworkProperties np = new NetworkProperties("irc.moparisthebest.xxx", 6667, false);
         connect(up, np);
     }
 
-    private static Pattern help = Pattern.compile("help(?:[:]? (?<command>\\S+))?");
+    private static Pattern help = Pattern.compile("help(?:[:]? (\\S+))?");
 
     @Override
     public void OnIrcMessage(Channel channel, IrcChat chat) {
@@ -80,7 +80,7 @@ public class Lordick extends IrcClient {
             String text = chat.getMessage().substring(chat.getMessage().indexOf(' ') + 1);
             Matcher m = help.matcher(text);
             if (m.matches()) {
-                String command = m.group("command");
+                String command = m.group(1);
                 if (command == null) {
                     IrcClient.sendChat(channel, chat.getDestination(), "Help available for: %s", commandListString);
                 } else if (!commandList.containsKey(command)) {
