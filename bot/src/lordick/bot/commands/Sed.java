@@ -1,10 +1,8 @@
 package lordick.bot.commands;
 
-import io.netty.channel.Channel;
 import lordick.bot.BotCommand;
-import xxx.moparisthebest.irclib.IrcChat;
 import xxx.moparisthebest.irclib.IrcClient;
-import xxx.moparisthebest.util.Hostmask;
+import xxx.moparisthebest.irclib.IrcMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,11 +26,11 @@ public class Sed extends BotCommand {
     }
 
     @Override
-    public boolean shouldHandleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        if (chat.isChannel()) {
-            boolean sedmatch = chat.getMessage().matches(SED_REGEX.pattern());
+    public boolean shouldHandleMessage(IrcClient client, IrcMessage message) {
+        if (message.isDestChannel()) {
+            boolean sedmatch = message.getMessage().matches(SED_REGEX.pattern());
             if (!sedmatch) {
-                lastMessage.put(chat.getPrefix(), chat.getMessage());
+                lastMessage.put(message.getPrefix(), message.getMessage());
             }
             return sedmatch;
         }
@@ -40,23 +38,23 @@ public class Sed extends BotCommand {
     }
 
     @Override
-    public void handleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        if (!lastMessage.containsKey(chat.getPrefix())) {
+    public void handleMessage(IrcClient client, IrcMessage message) {
+        if (!lastMessage.containsKey(message.getPrefix())) {
             return;
         }
-        Matcher m = SED_REGEX.matcher(chat.getMessage());
-        if (m.matches()) {
-            String last = lastMessage.get(chat.getPrefix());
+        Matcher m = SED_REGEX.matcher(message.getMessage());
+        if (m.find()) {
+            String last = lastMessage.get(message.getPrefix());
             String reply;
             if (m.group(4) == null || m.group(4).equals("")) {
                 reply = last.replaceFirst(m.group(2), m.group(3));
             } else if (m.group(4) != null && m.group(4).equals("g")) {
                 reply = last.replaceAll(m.group(2), m.group(3));
             } else {
-                IrcClient.sendChat(channel, chat.getDestination(), "%s: You did something wrong... %s", Hostmask.getNick(chat.getPrefix()), getHelp());
+                message.sendChatf("%s: You did something wrong... %s", message.getHostmask().getNick(), getHelp());
                 return;
             }
-            IrcClient.sendChat(channel, chat.getDestination(), "%s meant: %s", Hostmask.getNick(chat.getPrefix()), reply);
+            message.sendChatf("%s meant: %s", message.getHostmask().getNick(), reply);
         }
     }
 }

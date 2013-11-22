@@ -16,12 +16,12 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
     // http://mybuddymichael.com/writings/a-regular-expression-for-irc-messages.html
     public static Pattern IRC_PATTERN = Pattern.compile("^(?:[:](\\S+) )?(\\S+)(?: (?!:)(.+?))?(?: [:](.+))?$");
 
-    private List<IrcMessage> messageHandlers = new CopyOnWriteArrayList<IrcMessage>();
+    private List<IrcMessageHandler> messageHandlers = new CopyOnWriteArrayList<IrcMessageHandler>();
 
     public IrcHandler() {
         for (Class c : ClassEnumerator.getClassesForPackage(Ping.class.getPackage())) {
             try {
-                IrcMessage message = (IrcMessage) c.newInstance();
+                IrcMessageHandler message = (IrcMessageHandler) c.newInstance();
                 messageHandlers.add(message);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -36,13 +36,13 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
             // todo: print error or something
             return;
         }
-        IrcChat chat = new IrcChat(message, m.group(1), m.group(2), m.group(3), m.group(4));
-        for (IrcMessage ircMessage : messageHandlers) {
-            if (ircMessage.shouldHandle(ctx, chat)) {
-                ircMessage.handleMessage(ctx, chat);
+        IrcMessage msg = new IrcMessage(message, m.group(1), m.group(2), m.group(3), m.group(4), ctx.channel());
+        for (IrcMessageHandler ircMessage : messageHandlers) {
+            if (ircMessage.shouldHandle(msg)) {
+                ircMessage.handle(msg);
             }
         }
-        IrcClient.getIrcClient(ctx.channel()).OnIrcMessage(ctx.channel(), chat);
+        IrcClient.getIrcClient(ctx.channel()).OnIrcMessage(msg);
     }
 
     @Override

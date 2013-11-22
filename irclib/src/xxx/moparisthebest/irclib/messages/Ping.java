@@ -1,17 +1,16 @@
 package xxx.moparisthebest.irclib.messages;
 
-import io.netty.channel.ChannelHandlerContext;
-import xxx.moparisthebest.irclib.IrcChat;
 import xxx.moparisthebest.irclib.IrcMessage;
+import xxx.moparisthebest.irclib.IrcMessageHandler;
 
-public class Ping implements IrcMessage {
+public class Ping implements IrcMessageHandler {
     @Override
-    public boolean shouldHandle(ChannelHandlerContext ctx, IrcChat chat) {
-        return chat.getType().equalsIgnoreCase("PING");
+    public boolean shouldHandle(IrcMessage message) {
+        return message.getType().equalsIgnoreCase("PING");
     }
 
     @Override
-    public void handleMessage(ChannelHandlerContext ctx, IrcChat chat) {
-        ctx.writeAndFlush("PONG :" + chat.getMessage());
+    public void handle(IrcMessage message) {
+        message.getChannel().writeAndFlush("PONG :" + message.getMessage());
     }
 }

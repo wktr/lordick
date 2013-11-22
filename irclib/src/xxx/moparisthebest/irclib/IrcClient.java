@@ -65,20 +65,12 @@ public class IrcClient {
         return chan;
     }
 
-    public static void sendChat(Channel channel, String destination, String message, Object... format) {
-        sendChat(channel, destination, String.format(message, format));
-    }
-
-    public static void sendChat(Channel channel, String destination, String message) {
-        channel.writeAndFlush("PRIVMSG " + destination + " :" + message);
-    }
-
     public void OnSend(Channel channel, String message) {
         System.out.println("OnSend(): " + channel + " - " + message);
     }
 
-    public void OnIrcMessage(Channel channel, IrcChat chat) {
-        System.out.println("OnIrcMessage(): " + channel + " - " + chat.getRaw());
+    public void OnIrcMessage(IrcMessage message) {
+        System.out.println("OnIrcMessage(): " + message.getChannel() + " - " + message.getRaw());
     }
 
     public void OnDisconnect(Channel channel) {

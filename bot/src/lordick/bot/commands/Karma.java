@@ -1,9 +1,8 @@
 package lordick.bot.commands;
 
-import io.netty.channel.Channel;
 import lordick.bot.BotCommand;
-import xxx.moparisthebest.irclib.IrcChat;
 import xxx.moparisthebest.irclib.IrcClient;
+import xxx.moparisthebest.irclib.IrcMessage;
 import xxx.moparisthebest.util.StringUtil;
 
 import java.sql.*;
@@ -42,14 +41,14 @@ public class Karma extends BotCommand {
     private static String help = command.pattern() + " - shows karma score for name, or name++ increases karma score for name";
 
     @Override
-    public boolean shouldHandleCommand(IrcClient client, Channel channel, IrcChat chat) {
-        return chat.getMessage().matches(command.pattern());
+    public boolean shouldHandleCommand(IrcClient client, IrcMessage message) {
+        return command.matcher(message.getMessage()).find();
     }
 
     @Override
-    public void handleCommand(IrcClient client, Channel channel, IrcChat chat) {
-        Matcher m = command.matcher(chat.getMessage());
-        if (m.matches()) {
+    public void handleCommand(IrcClient client, IrcMessage message) {
+        Matcher m = command.matcher(message.getMessage());
+        if (m.find()) {
             String nick = m.group(1);
             try {
                 PreparedStatement ps = connection.prepareStatement("select score from karma where name == ?");
@@ -57,9 +56,9 @@ public class Karma extends BotCommand {
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
                     int score = rs.getInt(1);
-                    IrcClient.sendChat(channel, chat.getDestination(), "karma for %s: %d", nick, score);
+                    message.sendChatf("karma for %s: %d", nick, score);
                 } else {
-                    IrcClient.sendChat(channel, chat.getDestination(), "no karma for %s", nick);
+                    message.sendChatf("no karma for %s", nick);
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -78,13 +77,13 @@ public class Karma extends BotCommand {
     }
 
     @Override
-    public boolean shouldHandleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        return chat.isChannel() && chat.getMessage().contains("++");
+    public boolean shouldHandleMessage(IrcClient client, IrcMessage message) {
+        return message.isDestChannel() && message.getMessage().contains("++");
     }
 
     @Override
-    public void handleMessage(IrcClient client, Channel channel, IrcChat chat) {
-        Matcher m = karma.matcher(chat.getMessage());
+    public void handleMessage(IrcClient client, IrcMessage message) {
+        Matcher m = karma.matcher(message.getMessage());
         while (m.find()) {
             try {
                 String nick = m.group(1);

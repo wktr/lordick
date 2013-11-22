@@ -1,10 +1,9 @@
 package lordick;
 
-import io.netty.channel.Channel;
 import lordick.bot.BotCommand;
 import lordick.bot.commands.Karma;
-import xxx.moparisthebest.irclib.IrcChat;
 import xxx.moparisthebest.irclib.IrcClient;
+import xxx.moparisthebest.irclib.IrcMessage;
 import xxx.moparisthebest.irclib.properties.NetworkProperties;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 import xxx.moparisthebest.util.ClassEnumerator;
@@ -70,50 +69,50 @@ public class Lordick extends IrcClient {
     private static Pattern help = Pattern.compile("help(?:[:]? (\\S+))?");
 
     @Override
-    public void OnIrcMessage(Channel channel, IrcChat chat) {
-        super.OnIrcMessage(channel, chat);
-        if (!chat.isChannel()) {
+    public void OnIrcMessage(IrcMessage message) {
+        super.OnIrcMessage(message);
+        if (!message.isDestChannel()) {
             return;
         }
-        UserProperties up = IrcClient.getUserProperties(channel);
-        if (chat.getMessage().matches("^" + up.getNickname() + "[:,]* .+")) {
-            String text = chat.getMessage().substring(chat.getMessage().indexOf(' ') + 1);
+        UserProperties up = IrcClient.getUserProperties(message.getChannel());
+        if (message.getMessage().matches("^" + up.getNickname() + ".? .+")) {
+            String text = message.getMessage().substring(message.getMessage().indexOf(' ') + 1);
             Matcher m = help.matcher(text);
-            if (m.matches()) {
+            if (m.find()) {
                 String command = m.group(1);
                 if (command == null) {
-                    IrcClient.sendChat(channel, chat.getDestination(), "Help available for: %s", commandListString);
+                    message.sendChatf("Help available for: %s", commandListString);
                 } else if (!commandList.containsKey(command)) {
-                    IrcClient.sendChat(channel, chat.getDestination(), "No help for command: %s", command);
+                    message.sendChatf("No help for command: %s", command);
                 } else {
-                    IrcClient.sendChat(channel, chat.getDestination(), "Help for %s: %s", command, commandList.get(command).getHelp());
+                    message.sendChatf("Help for %s: %s", command, commandList.get(command).getHelp());
                 }
             } else {
-                chat.setMessage(text);
+                message.setMessage(text);
                 boolean handled = false;
                 for (BotCommand botCommand : commandHandlers) {
-                    if (botCommand.shouldHandleCommand(this, channel, chat)) {
+                    if (botCommand.shouldHandleCommand(this, message)) {
                         handled = true;
-                        botCommand.handleCommand(this, channel, chat);
+                        botCommand.handleCommand(this, message);
                     }
                 }
                 if (!handled) {
                     for (BotCommand botCommand : commandHandlers) {
-                        botCommand.unhandledCommand(this, channel, chat);
+                        botCommand.unhandledCommand(this, message);
                     }
                 }
             }
         } else {
             boolean handled = false;
             for (BotCommand botCommand : commandHandlers) {
-                if (botCommand.shouldHandleMessage(this, channel, chat)) {
+                if (botCommand.shouldHandleMessage(this, message)) {
                     handled = true;
-                    botCommand.handleMessage(this, channel, chat);
+                    botCommand.handleMessage(this, message);
                 }
             }
             if (!handled) {
                 for (BotCommand botCommand : commandHandlers) {
-                    botCommand.unhandledMessage(this, channel, chat);
+                    botCommand.unhandledMessage(this, message);
                 }
             }
         }

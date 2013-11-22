@@ -1,24 +1,23 @@
 package xxx.moparisthebest.irclib.messages;
 
-import io.netty.channel.ChannelHandlerContext;
-import xxx.moparisthebest.irclib.IrcChat;
 import xxx.moparisthebest.irclib.IrcClient;
 import xxx.moparisthebest.irclib.IrcMessage;
+import xxx.moparisthebest.irclib.IrcMessageHandler;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 
-public class Homechans implements IrcMessage {
+public class Homechans implements IrcMessageHandler {
 
     @Override
-    public boolean shouldHandle(ChannelHandlerContext ctx, IrcChat chat) {
-        return chat.getType().equalsIgnoreCase("001");
+    public boolean shouldHandle(IrcMessage message) {
+        return message.getType().equalsIgnoreCase("001");
     }
 
     @Override
-    public void handleMessage(ChannelHandlerContext ctx, IrcChat chat) {
-        UserProperties up = IrcClient.getUserProperties(ctx.channel());
+    public void handle(IrcMessage message) {
+        UserProperties up = IrcClient.getUserProperties(message.getChannel());
         for (String s : up.getHomeChannels()) {
-            ctx.write("JOIN " + s);
+            message.getChannel().write("JOIN " + s);
         }
-        ctx.flush();
+        message.getChannel().flush();
     }
 }

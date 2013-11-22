@@ -1,9 +1,8 @@
 package lordick.bot.commands;
 
-import io.netty.channel.Channel;
 import lordick.bot.BotCommand;
-import xxx.moparisthebest.irclib.IrcChat;
 import xxx.moparisthebest.irclib.IrcClient;
+import xxx.moparisthebest.irclib.IrcMessage;
 
 import java.sql.*;
 import java.util.Random;
@@ -42,8 +41,8 @@ public class Markov extends BotCommand {
     private static Pattern command = Pattern.compile("chat\\s(\\S+):?\\s*(\\S+)?(?: (\\S+))?", Pattern.CASE_INSENSITIVE);
 
     @Override
-    public boolean shouldHandleCommand(IrcClient client, Channel channel, IrcChat chat) {
-        return chat.getMessage().matches(command.pattern());
+    public boolean shouldHandleCommand(IrcClient client, IrcMessage message) {
+        return command.matcher(message.getMessage()).find();
     }
 
     private int s2i(String s, int min, int max) {
@@ -63,37 +62,37 @@ public class Markov extends BotCommand {
     }
 
     @Override
-    public void handleCommand(IrcClient client, Channel channel, IrcChat chat) {
-        Matcher m = command.matcher(chat.getMessage());
-        if (m.matches()) {
+    public void handleCommand(IrcClient client, IrcMessage message) {
+        Matcher m = command.matcher(message.getMessage());
+        if (m.find()) {
             String cmd = m.group(1);
             if (cmd.equalsIgnoreCase("about")) {
                 if (m.group(2) == null || m.group(2).length() == 0) {
-                    IrcClient.sendChat(channel, chat.getDestination(), "Need context");
+                    message.sendChat("Need context");
                 } else if (randy.nextFloat() * 100 <= replynick) {
                     String markov = markov_find(m.group(2), m.group(3));
                     if (markov == null) {
-                        IrcClient.sendChat(channel, chat.getDestination(), "I can't :(");
+                        message.sendChat("I can't :(");
                     } else {
-                        IrcClient.sendChat(channel, chat.getDestination(), markov);
+                        message.sendChat(markov);
                     }
                 }
             } else if (cmd.equalsIgnoreCase("replyrate")) {
                 if (m.group(2) == null) {
-                    IrcClient.sendChat(channel, chat.getDestination(), "Reply rate is: %d%%", replyrate);
+                    message.sendChatf("Reply rate is: %d%%", replyrate);
                 } else {
                     replyrate = s2i(m.group(2), 0, 100);
-                    IrcClient.sendChat(channel, chat.getDestination(), "Reply rate set to: %d%%", replyrate);
+                    message.sendChatf("Reply rate set to: %d%%", replyrate);
                 }
             } else if (cmd.equalsIgnoreCase("replynick")) {
                 if (m.group(2) == null) {
-                    IrcClient.sendChat(channel, chat.getDestination(), "Reply nick is: %d%%", replynick);
+                    message.sendChatf("Reply nick is: %d%%", replynick);
                 } else {
                     replynick = s2i(m.group(2), 0, 100);
-                    IrcClient.sendChat(channel, chat.getDestination(), "Reply nick set to: %d%%", replynick);
+                    message.sendChatf("Reply nick set to: %d%%", replynick);
                 }
             } else {
-                IrcClient.sendChat(channel, chat.getDestination(), "Unknown command: %d%%", cmd);
+                message.sendChatf("Unknown command: %d%%", cmd);
             }
         }
     }
@@ -109,13 +108,13 @@ public class Markov extends BotCommand {
     }
 
     @Override
-    public void unhandledMessage(IrcClient client, Channel channel, IrcChat chat) {
-        if (chat.isChannel()) {
-            markov_learn(chat.getMessage());
+    public void unhandledMessage(IrcClient client, IrcMessage message) {
+        if (message.isDestChannel()) {
+            markov_learn(message.getMessage());
             if (randy.nextFloat() * 100 <= replyrate) {
                 String markov = markov_generate();
                 if (markov != null) {
-                    IrcClient.sendChat(channel, chat.getDestination(), markov);
+                    message.sendChat(markov);
                 }
             }
         }
