@@ -146,9 +146,11 @@ public class Markov extends BotCommand {
     private String markov_find(String seed1, String seed2) {
         try {
             PreparedStatement ps;
-            ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_b = ? order by random() limit 1");
+            ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_a = ? or seed_b = ? or seed_b = ? order by random() limit 1");
             ps.setString(1, seed1);
             ps.setString(2, (seed2 == null ? seed1 : seed2));
+            ps.setString(3, seed1);
+            ps.setString(4, (seed2 == null ? seed1 : seed2));
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 String found1 = rs.getString(1);
@@ -189,7 +191,26 @@ public class Markov extends BotCommand {
         //System.out.printf("Start seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
         int wordcount = randy.nextInt(20) + 10;
         StringBuilder result = new StringBuilder();
-        for (int i = 0; i < wordcount; i++) {
+        if (!seed1.equalsIgnoreCase("\r")) {
+            result.append(seed1);
+            result.append(' ');
+        }
+        if (!seed2.equalsIgnoreCase("\r")) {
+            result.append(seed2);
+        }
+        for (int i = 0; i < wordcount / 2; i++) {
+            String seed0 = markov_previousseed(seed1, seed2);
+            if (seed0 == null || seed0.equalsIgnoreCase("\n")) {
+                break;
+            }
+            if (result.length() > 0) {
+                result.insert(0, ' ');
+            }
+            result.insert(0, seed0);
+            seed2 = seed1;
+            seed1 = seed0;
+        }
+        for (int i = 0; i < wordcount / 2; i++) {
             String seed3 = markov_nextseed(seed1, seed2);
             if (seed3 == null || seed3.equalsIgnoreCase("\n")) {
                 break;
@@ -200,10 +221,9 @@ public class Markov extends BotCommand {
             result.append(seed3);
             seed1 = seed2;
             seed2 = seed3;
-            //System.out.printf("Seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
         }
         if (result.length() > 0) {
-            return result.toString();
+            return result.toString().trim();
         } else {
             return null;
         }
@@ -214,6 +234,21 @@ public class Markov extends BotCommand {
             PreparedStatement ps = connection.prepareStatement("select seed_c from markov where seed_a = ? and seed_b = ? order by random() limit 1");
             ps.setString(1, seed1);
             ps.setString(2, seed2);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String markov_previousseed(String seed2, String seed3) {
+        try {
+            PreparedStatement ps = connection.prepareStatement("select seed_a from markov where seed_b = ? and seed_c = ? order by random() limit 1");
+            ps.setString(1, seed2);
+            ps.setString(2, seed3);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return rs.getString(1);
