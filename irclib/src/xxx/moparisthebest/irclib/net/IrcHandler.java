@@ -56,6 +56,8 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         IrcServer server = new IrcServer(ctx.channel());
+        server.getChannel().write("NICK " + server.getUserProperties().getNickname());
+        server.getChannel().writeAndFlush("USER " + server.getUserProperties().getIdent() + " 0 * :" + server.getUserProperties().getRealname());
         server.getIrcClient().onConnect(server);
     }
 

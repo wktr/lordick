@@ -5,27 +5,27 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 import xxx.moparisthebest.irclib.net.IrcInitializer;
 import xxx.moparisthebest.irclib.net.IrcServer;
 import xxx.moparisthebest.irclib.properties.NetworkProperties;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 public class IrcClient {
 
     private EventLoopGroup group = new NioEventLoopGroup();
-    private List<Channel> connections = new CopyOnWriteArrayList<Channel>();
+    ChannelGroup connections = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     public EventLoopGroup getGroup() {
         return group;
     }
 
-    public List<Channel> getConnections() {
+    public ChannelGroup getConnections() {
         return connections;
     }
 
@@ -34,24 +34,20 @@ public class IrcClient {
         Bootstrap b = new Bootstrap();
         b.group(group).channel(NioSocketChannel.class).handler(new IrcInitializer(this, np.isSSL()));
         ChannelFuture cf = b.connect(np.getHost(), np.getPort());
-        cf.channel().closeFuture().addListener(new ChannelFutureListener() {
+        Channel channel = cf.channel();
+        IrcServer.setProperties(channel, up, np, this);
+        channel.closeFuture().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                Channel channel = channelFuture.channel();
-                connections.remove(channel);
-                onDisconnect(new IrcServer(channel));
+                onDisconnect(new IrcServer(channelFuture.channel()));
             }
         });
-        Channel chan = cf.channel();
-        IrcServer.setProperties(chan, up, np, this);
-        connections.add(chan);
-        return chan;
+        connections.add(channel);
+        return channel;
     }
 
     public void onConnect(IrcServer server) {
         System.out.println("onConnect(): " + server);
-        server.getChannel().write("NICK " + server.getUserProperties().getNickname());
-        server.getChannel().writeAndFlush("USER " + server.getUserProperties().getIdent() + " 0 * :" + server.getUserProperties().getRealname());
     }
 
     public void onSend(IrcServer server, String message) {
