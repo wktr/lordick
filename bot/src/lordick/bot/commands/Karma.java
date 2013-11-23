@@ -49,7 +49,7 @@ public class Karma extends BotCommand {
     public void handleCommand(IrcClient client, IrcMessage message) {
         Matcher m = command.matcher(message.getMessage());
         if (m.find()) {
-            String nick = m.group(1);
+            String nick = m.group(1).toLowerCase();
             try {
                 PreparedStatement ps = connection.prepareStatement("select score from karma where name == ?");
                 ps.setString(1, nick);
@@ -86,7 +86,7 @@ public class Karma extends BotCommand {
         Matcher m = karma.matcher(message.getMessage());
         while (m.find()) {
             try {
-                String nick = m.group(1);
+                String nick = m.group(1).toLowerCase();
                 PreparedStatement ps = connection.prepareStatement("insert or replace into karma (name, score) values (?, ifnull((select score + 1 from karma where name = ?), 1))");
                 ps.setString(1, nick);
                 ps.setString(2, nick);
