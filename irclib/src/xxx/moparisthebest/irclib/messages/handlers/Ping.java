@@ -6,11 +6,11 @@ import xxx.moparisthebest.irclib.messages.IrcMessageHandler;
 public class Ping implements IrcMessageHandler {
     @Override
     public boolean shouldHandle(IrcMessage message) {
-        return message.getType().equalsIgnoreCase("PING");
+        return message.getCommand().equalsIgnoreCase("PING");
     }
 
     @Override
     public void handle(IrcMessage message) {
-        message.getChannel().writeAndFlush("PONG :" + message.getMessage());
+        message.getServer().getChannel().writeAndFlush("PONG :" + message.getMessage());
     }
 }

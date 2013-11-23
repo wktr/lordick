@@ -1,10 +1,10 @@
 package lordick;
 
-import io.netty.channel.Channel;
 import lordick.bot.BotCommand;
 import lordick.bot.commands.Karma;
 import xxx.moparisthebest.irclib.IrcClient;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
+import xxx.moparisthebest.irclib.net.IrcServer;
 import xxx.moparisthebest.irclib.properties.NetworkProperties;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 import xxx.moparisthebest.util.ClassEnumerator;
@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -68,20 +69,28 @@ public class Lordick extends IrcClient {
     }
 
     @Override
-    public void OnDisconnect(Channel channel) {
-        UserProperties up = IrcClient.getUserProperties(channel);
-        NetworkProperties np = IrcClient.getNetworkProperties(channel);
-        connect(up, np);
+    public void onDisconnect(IrcServer server) {
+        super.onDisconnect(server);
+        final UserProperties up = server.getUserProperties();
+        final NetworkProperties np = server.getNetworkProperties();
+        server.getIrcClient().getGroup().schedule(new Runnable() {
+            @Override
+            public void run() {
+                connect(up, np);
+            }
+        }, 10, TimeUnit.SECONDS);
+
     }
 
     private static Pattern help = Pattern.compile("help(?:[:]? (\\S+))?");
 
     @Override
-    public void OnIrcMessage(IrcMessage message) {
+    public void onMessage(IrcMessage message) {
+        super.onMessage(message);
         if (!message.isDestChannel()) {
             return;
         }
-        UserProperties up = IrcClient.getUserProperties(message.getChannel());
+        UserProperties up = message.getServer().getUserProperties();
         if (message.getMessage().matches("^" + up.getNickname() + ".? .+")) {
             String text = message.getMessage().substring(message.getMessage().indexOf(' ') + 1);
             Matcher m = help.matcher(text);

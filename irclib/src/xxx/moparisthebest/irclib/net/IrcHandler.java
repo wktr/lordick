@@ -2,11 +2,9 @@ package xxx.moparisthebest.irclib.net;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import xxx.moparisthebest.irclib.IrcClient;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 import xxx.moparisthebest.irclib.messages.IrcMessageHandler;
 import xxx.moparisthebest.irclib.messages.handlers.Ping;
-import xxx.moparisthebest.irclib.properties.UserProperties;
 import xxx.moparisthebest.util.ClassEnumerator;
 
 import java.util.List;
@@ -34,30 +32,31 @@ public class IrcHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String message) throws Exception {
+        IrcServer server = new IrcServer(ctx.channel());
         Matcher m = IRC_PATTERN.matcher(message);
         if (!m.matches()) {
-            // todo: print error or something
+            server.getIrcClient().onUnknown(server, message);
             return;
         }
-        IrcMessage msg = new IrcMessage(message, m.group(1), m.group(2), m.group(3), m.group(4), ctx.channel());
+        IrcMessage msg = new IrcMessage(message, m.group(1), m.group(2), m.group(3), m.group(4), server);
         for (IrcMessageHandler ircMessage : messageHandlers) {
             if (ircMessage.shouldHandle(msg)) {
                 ircMessage.handle(msg);
             }
         }
-        IrcClient.getIrcClient(ctx.channel()).OnIrcMessage(msg);
+        server.getIrcClient().onMessage(msg);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        IrcClient.getIrcClient(ctx.channel()).OnException(ctx.channel(), cause);
+        IrcServer server = new IrcServer(ctx.channel());
+        server.getIrcClient().onException(server, cause);
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        UserProperties userprops = IrcClient.getUserProperties(ctx.channel());
-        ctx.write("NICK " + userprops.getNickname());
-        ctx.writeAndFlush("USER " + userprops.getIdent() + " 0 * :" + userprops.getRealname());
+        IrcServer server = new IrcServer(ctx.channel());
+        server.getIrcClient().onConnect(server);
     }
 
     @Override

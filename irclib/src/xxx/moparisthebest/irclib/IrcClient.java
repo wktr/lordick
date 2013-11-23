@@ -7,9 +7,9 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.AttributeKey;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 import xxx.moparisthebest.irclib.net.IrcInitializer;
+import xxx.moparisthebest.irclib.net.IrcServer;
 import xxx.moparisthebest.irclib.properties.NetworkProperties;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 
@@ -18,32 +18,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class IrcClient {
 
-    private static final AttributeKey<UserProperties> USERPROPS_ATTR = AttributeKey.valueOf("UserProperties.attr");
-    private static final AttributeKey<NetworkProperties> NETPROPS_ATTR = AttributeKey.valueOf("NetworkProperties.attr");
-    private static final AttributeKey<IrcClient> CLIENT_ATTR = AttributeKey.valueOf("IrcClient.attr");
-
-    public static IrcClient getIrcClient(Channel channel) {
-        return channel.attr(CLIENT_ATTR).get();
-    }
-
-    public static NetworkProperties getNetworkProperties(Channel channel) {
-        return channel.attr(NETPROPS_ATTR).get();
-    }
-
-    public static UserProperties getUserProperties(Channel channel) {
-        return channel.attr(USERPROPS_ATTR).get();
-    }
-
     private EventLoopGroup group = new NioEventLoopGroup();
     private List<Channel> connections = new CopyOnWriteArrayList<Channel>();
 
-    public List<Channel> getConnections() {
-        return connections;
+    public EventLoopGroup getGroup() {
+        return group;
     }
 
-    public void disconnect(Channel ircConnection) {
-        connections.remove(ircConnection);
-        ircConnection.close();
+    public List<Channel> getConnections() {
+        return connections;
     }
 
     public Channel connect(UserProperties up, NetworkProperties np) {
@@ -56,35 +39,40 @@ public class IrcClient {
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
                 Channel channel = channelFuture.channel();
                 connections.remove(channel);
-                OnDisconnect(channel);
+                onDisconnect(new IrcServer(channel));
             }
         });
         Channel chan = cf.channel();
-        chan.attr(USERPROPS_ATTR).set(up);
-        chan.attr(NETPROPS_ATTR).set(np);
-        chan.attr(CLIENT_ATTR).set(this);
+        IrcServer.setProperties(chan, up, np, this);
         connections.add(chan);
         return chan;
     }
 
-    public void OnSend(Channel channel, String message) {
-        System.out.println("OnSend(): " + channel + " - " + message);
+    public void onConnect(IrcServer server) {
+        System.out.println("onConnect(): " + server);
+        server.getChannel().write("NICK " + server.getUserProperties().getNickname());
+        server.getChannel().writeAndFlush("USER " + server.getUserProperties().getIdent() + " 0 * :" + server.getUserProperties().getRealname());
     }
 
-    public void OnIrcMessage(IrcMessage message) {
-        System.out.println("OnIrcMessage(): " + message.getChannel() + " - " + message.getRaw());
+    public void onSend(IrcServer server, String message) {
+        System.out.println("onSend(): " + server + " - " + message);
     }
 
-    public void OnDisconnect(Channel channel) {
-        System.out.println("OnDisconnect(): " + channel);
-        if (connections.size() <= 0) {
-            group.shutdownGracefully();
-        }
+    public void onMessage(IrcMessage message) {
+        System.out.println("onMessage(): " + message.getServer() + " - " + message.getRaw());
     }
 
-    public void OnException(Channel channel, Throwable cause) {
-        System.out.println("OnException(): " + channel + " - " + cause.getMessage());
+    public void onDisconnect(IrcServer server) {
+        System.out.println("onDisconnect(): " + server);
+    }
+
+    public void onException(IrcServer server, Throwable cause) {
+        System.out.println("onException(): " + server + " - " + cause.getMessage());
         cause.printStackTrace();
+    }
+
+    public void onUnknown(IrcServer server, String message) {
+        System.out.println("onUnknown(): " + server + " - " + message);
     }
 
 }

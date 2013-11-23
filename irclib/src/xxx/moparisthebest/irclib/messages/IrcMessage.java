@@ -1,48 +1,48 @@
 package xxx.moparisthebest.irclib.messages;
 
-import io.netty.channel.Channel;
+import xxx.moparisthebest.irclib.net.IrcServer;
 
 public class IrcMessage {
 
-    private final String raw, prefix, type, destination, destParams;
+    private final String raw, source, command, target, targetParams;
     private String message;
-    private final Channel channel;
+    private final IrcServer server;
     private IrcHostmask hostmask;
 
-    public IrcMessage(String raw, String prefix, String type, String destination, String message, Channel channel) {
+    public IrcMessage(String raw, String source, String command, String target, String message, IrcServer server) {
         this.raw = raw;
-        this.prefix = prefix;
-        hostmask = new IrcHostmask(prefix);
-        this.type = type;
-        if (destination != null) {
-            String[] dummy = destination.split(" ", 2);
-            this.destination = dummy[0];
-            this.destParams = (dummy.length == 2 ? dummy[1] : null);
+        this.source = source;
+        hostmask = new IrcHostmask(source);
+        this.command = command;
+        if (target != null) {
+            String[] dummy = target.split(" ", 2);
+            this.target = dummy[0];
+            this.targetParams = (dummy.length == 2 ? dummy[1] : null);
         } else {
-            this.destination = this.destParams = null;
+            this.target = this.targetParams = null;
         }
         this.message = message;
-        this.channel = channel;
+        this.server = server;
     }
 
     public String getRaw() {
         return raw;
     }
 
-    public String getPrefix() {
-        return prefix;
+    public String getSource() {
+        return source;
     }
 
-    public String getType() {
-        return type;
+    public String getCommand() {
+        return command;
     }
 
-    public String getDestination() {
-        return destination;
+    public String getTarget() {
+        return target;
     }
 
-    public String getDestParams() {
-        return destParams;
+    public String getTargetParams() {
+        return targetParams;
     }
 
     public String getMessage() {
@@ -53,16 +53,24 @@ public class IrcMessage {
         this.message = message;
     }
 
-    public boolean isDestChannel() {
-        return getType().equalsIgnoreCase("PRIVMSG") && getDestination().startsWith("#");
-    }
-
-    public Channel getChannel() {
-        return channel;
+    public IrcServer getServer() {
+        return server;
     }
 
     public IrcHostmask getHostmask() {
         return hostmask;
+    }
+
+    public boolean isDestChannel() {
+        return getCommand().equalsIgnoreCase("PRIVMSG") && getTarget().startsWith("#");
+    }
+
+    public String getSender() {
+        if (isDestChannel()) {
+            return getTarget();
+        } else {
+            return getHostmask().getNick();
+        }
     }
 
     public void sendChatf(String message, Object... format) {
@@ -70,6 +78,6 @@ public class IrcMessage {
     }
 
     public void sendChat(String message) {
-        channel.writeAndFlush("PRIVMSG " + destination + " :" + message);
+        server.getChannel().writeAndFlush("PRIVMSG " + getSender() + " :" + message);
     }
 }

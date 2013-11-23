@@ -35,8 +35,8 @@ public class ClassEnumerator {
             if (fileName.endsWith(".class")) {
                 // removes the .class extension
                 String className = pkgname + '.' + fileName.substring(0, fileName.length() - 6);
-                log("FileName '" + fileName + "'  =>  class '" + className + "'");
                 if (!className.contains("$")) {
+                    log("FileName '" + fileName + "'  =>  class '" + className + "'");
                     classes.add(loadClass(className));
                 }
             }

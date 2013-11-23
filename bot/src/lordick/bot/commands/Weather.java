@@ -7,6 +7,7 @@ import xxx.moparisthebest.irclib.messages.IrcMessage;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,7 +16,7 @@ public class Weather extends BotCommand {
 
     private static final String WEATHER_URL = "http://mobile.wunderground.com/cgi-bin/findweather/getForecast?brand=mobile&query=";
     private static Pattern table = Pattern.compile("<table border=\"1\" width=\"100%\">(.+?)</table>");
-    private ConcurrentHashMap<String, String> lastWeather = new ConcurrentHashMap<String, String>();
+    private Map<String, String> lastWeather = new ConcurrentHashMap<String, String>();
 
     @Override
     public String getHelp() {

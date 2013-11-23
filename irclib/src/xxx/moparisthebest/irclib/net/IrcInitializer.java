@@ -48,7 +48,7 @@ public class IrcInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast("lineEncoder", new MessageToMessageEncoder<String>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, String message, List<Object> out) throws Exception {
-                client.OnSend(ctx.channel(), message);
+                client.onSend(new IrcServer(ctx.channel()), message);
                 out.add(message + "\r\n");
             }
         });
