@@ -48,6 +48,9 @@ public class IrcInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast("lineEncoder", new MessageToMessageEncoder<String>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, String message, List<Object> out) throws Exception {
+                if (message.length() > 200) {
+                    message = message.substring(0, 200);
+                }
                 client.onSend(new IrcServer(ctx.channel()), message);
                 out.add(message + "\r\n");
             }
