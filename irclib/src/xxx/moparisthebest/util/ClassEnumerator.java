@@ -31,15 +31,14 @@ public class ClassEnumerator {
         String[] files = directory.list();
         for (int i = 0; i < files.length; i++) {
             String fileName = files[i];
-            String className = null;
             // we are only interested in .class files
             if (fileName.endsWith(".class")) {
                 // removes the .class extension
-                className = pkgname + '.' + fileName.substring(0, fileName.length() - 6);
-            }
-            log("FileName '" + fileName + "'  =>  class '" + className + "'");
-            if (className != null && !className.contains("$")) {
-                classes.add(loadClass(className));
+                String className = pkgname + '.' + fileName.substring(0, fileName.length() - 6);
+                log("FileName '" + fileName + "'  =>  class '" + className + "'");
+                if (!className.contains("$")) {
+                    classes.add(loadClass(className));
+                }
             }
             File subdir = new File(directory, fileName);
             if (subdir.isDirectory()) {
@@ -63,12 +62,9 @@ public class ClassEnumerator {
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             String entryName = entry.getName();
-            String className = null;
-            if (entryName.endsWith(".class") && entryName.startsWith(relPath) && entryName.length() > (relPath.length() + "/".length())) {
-                className = entryName.replace('/', '.').replace('\\', '.').replace(".class", "");
-            }
-            log("JarEntry '" + entryName + "'  =>  class '" + className + "'");
-            if (className != null && !className.contains("$")) {
+            if (entryName.endsWith(".class") && !entryName.contains("$") && entryName.startsWith(relPath) && entryName.length() > (relPath.length() + "/".length())) {
+                String className = entryName.replace('/', '.').replace('\\', '.').replace(".class", "");
+                log("JarEntry '" + entryName + "'  =>  class '" + className + "'");
                 classes.add(loadClass(className));
             }
         }
