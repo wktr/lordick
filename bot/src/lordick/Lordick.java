@@ -61,9 +61,9 @@ public class Lordick extends IrcClient {
         }
     }
 
-    public void start() {
+    public void start(String... homechans) {
         loadCommandHandlers();
-        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, "#lordick");
+        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, homechans);
         NetworkProperties np = new NetworkProperties("irc.moparisthebest.xxx", 6667, false);
         connect(up, np);
     }
