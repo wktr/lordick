@@ -2,7 +2,7 @@ package lordick.bot.commands;
 
 import lordick.bot.BotCommand;
 import xxx.moparisthebest.irclib.IrcClient;
-import xxx.moparisthebest.irclib.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
 import xxx.moparisthebest.util.StringUtil;
 
 import java.sql.*;

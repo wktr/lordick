@@ -1,8 +1,11 @@
-package xxx.moparisthebest.irclib;
+package xxx.moparisthebest.irclib.net;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import xxx.moparisthebest.irclib.messages.Ping;
+import xxx.moparisthebest.irclib.IrcClient;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessageHandler;
+import xxx.moparisthebest.irclib.messages.handlers.Ping;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 import xxx.moparisthebest.util.ClassEnumerator;
 

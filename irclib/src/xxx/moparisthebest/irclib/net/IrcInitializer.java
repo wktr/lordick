@@ -1,4 +1,4 @@
-package xxx.moparisthebest.irclib;
+package xxx.moparisthebest.irclib.net;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -9,6 +9,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslHandler;
+import xxx.moparisthebest.irclib.IrcClient;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;

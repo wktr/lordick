@@ -1,7 +1,7 @@
-package xxx.moparisthebest.irclib.messages;
+package xxx.moparisthebest.irclib.messages.handlers;
 
-import xxx.moparisthebest.irclib.IrcMessage;
-import xxx.moparisthebest.irclib.IrcMessageHandler;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessageHandler;
 
 public class Ping implements IrcMessageHandler {
     @Override

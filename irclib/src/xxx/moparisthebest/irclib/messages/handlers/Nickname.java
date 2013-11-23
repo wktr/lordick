@@ -1,8 +1,8 @@
-package xxx.moparisthebest.irclib.messages;
+package xxx.moparisthebest.irclib.messages.handlers;
 
 import xxx.moparisthebest.irclib.IrcClient;
-import xxx.moparisthebest.irclib.IrcMessage;
-import xxx.moparisthebest.irclib.IrcMessageHandler;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessageHandler;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 
 import java.util.Random;

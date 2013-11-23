@@ -2,7 +2,7 @@ package lordick.bot.commands;
 
 import lordick.bot.BotCommand;
 import xxx.moparisthebest.irclib.IrcClient;
-import xxx.moparisthebest.irclib.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.sql.*;
 import java.util.Random;
@@ -77,19 +77,23 @@ public class Markov extends BotCommand {
                         message.sendChat(markov);
                     }
                 }
-            } else if (cmd.equalsIgnoreCase("replyrate")) {
-                if (m.group(2) == null) {
-                    message.sendChatf("Reply rate is: %d%%", replyrate);
+            } else if (message.getHostmask().getNick().equalsIgnoreCase("exemplar")) {
+                if (cmd.equalsIgnoreCase("replyrate")) {
+                    if (m.group(2) == null) {
+                        message.sendChatf("Reply rate is: %d%%", replyrate);
+                    } else {
+                        replyrate = s2i(m.group(2), 0, 100);
+                        message.sendChatf("Reply rate set to: %d%%", replyrate);
+                    }
+                } else if (cmd.equalsIgnoreCase("replynick")) {
+                    if (m.group(2) == null) {
+                        message.sendChatf("Reply nick is: %d%%", replynick);
+                    } else {
+                        replynick = s2i(m.group(2), 0, 100);
+                        message.sendChatf("Reply nick set to: %d%%", replynick);
+                    }
                 } else {
-                    replyrate = s2i(m.group(2), 0, 100);
-                    message.sendChatf("Reply rate set to: %d%%", replyrate);
-                }
-            } else if (cmd.equalsIgnoreCase("replynick")) {
-                if (m.group(2) == null) {
-                    message.sendChatf("Reply nick is: %d%%", replynick);
-                } else {
-                    replynick = s2i(m.group(2), 0, 100);
-                    message.sendChatf("Reply nick set to: %d%%", replynick);
+                    message.sendChatf("Unknown command: %d%%", cmd);
                 }
             } else {
                 message.sendChatf("Unknown command: %d%%", cmd);

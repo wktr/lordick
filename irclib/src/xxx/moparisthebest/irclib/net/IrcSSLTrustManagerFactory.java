@@ -1,4 +1,4 @@
-package xxx.moparisthebest.irclib;
+package xxx.moparisthebest.irclib.net;
 
 import javax.net.ssl.ManagerFactoryParameters;
 import javax.net.ssl.TrustManager;

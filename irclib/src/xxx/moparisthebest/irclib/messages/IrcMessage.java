@@ -1,4 +1,4 @@
-package xxx.moparisthebest.irclib;
+package xxx.moparisthebest.irclib.messages;
 
 import io.netty.channel.Channel;
 

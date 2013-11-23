@@ -3,7 +3,7 @@ package lordick.bot.commands;
 import com.udojava.evalex.Expression;
 import lordick.bot.BotCommand;
 import xxx.moparisthebest.irclib.IrcClient;
-import xxx.moparisthebest.irclib.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.math.BigDecimal;
 

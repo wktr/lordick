@@ -1,9 +1,10 @@
 package lordick;
 
+import io.netty.channel.Channel;
 import lordick.bot.BotCommand;
 import lordick.bot.commands.Karma;
 import xxx.moparisthebest.irclib.IrcClient;
-import xxx.moparisthebest.irclib.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
 import xxx.moparisthebest.irclib.properties.NetworkProperties;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 import xxx.moparisthebest.util.ClassEnumerator;
@@ -61,8 +62,15 @@ public class Lordick extends IrcClient {
 
     public void start() {
         loadCommandHandlers();
-        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, "#lordick", "#mopar");
+        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, "#lordick");
         NetworkProperties np = new NetworkProperties("irc.moparisthebest.xxx", 6667, false);
+        connect(up, np);
+    }
+
+    @Override
+    public void OnDisconnect(Channel channel) {
+        UserProperties up = IrcClient.getUserProperties(channel);
+        NetworkProperties np = IrcClient.getNetworkProperties(channel);
         connect(up, np);
     }
 
@@ -70,7 +78,6 @@ public class Lordick extends IrcClient {
 
     @Override
     public void OnIrcMessage(IrcMessage message) {
-        super.OnIrcMessage(message);
         if (!message.isDestChannel()) {
             return;
         }

@@ -8,6 +8,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
+import xxx.moparisthebest.irclib.net.IrcInitializer;
 import xxx.moparisthebest.irclib.properties.NetworkProperties;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 
@@ -75,6 +77,9 @@ public class IrcClient {
 
     public void OnDisconnect(Channel channel) {
         System.out.println("OnDisconnect(): " + channel);
+        if (connections.size() <= 0) {
+            group.shutdownGracefully();
+        }
     }
 
     public void OnException(Channel channel, Throwable cause) {

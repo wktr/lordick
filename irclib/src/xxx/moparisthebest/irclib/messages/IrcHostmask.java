@@ -1,4 +1,4 @@
-package xxx.moparisthebest.irclib;
+package xxx.moparisthebest.irclib.messages;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,8 +10,12 @@ public class IrcHostmask {
     private static Pattern HOSTMASK_PATTERN = Pattern.compile(":?([^!]+)(?:[!]([^@]+))?(?:[@](\\S+))?");
 
     public IrcHostmask(String prefix) {
+        if (prefix == null) {
+            nick = ident = host = null;
+            return;
+        }
         Matcher m = HOSTMASK_PATTERN.matcher(prefix);
-        if (m.matches()) {
+        if (m.find()) {
             nick = m.group(1);
             ident = m.group(2);
             host = m.group(3);

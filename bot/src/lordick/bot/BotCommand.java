@@ -1,7 +1,7 @@
 package lordick.bot;
 
 import xxx.moparisthebest.irclib.IrcClient;
-import xxx.moparisthebest.irclib.IrcMessage;
+import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 public abstract class BotCommand {
 
