@@ -49,6 +49,10 @@ public class IrcMessage {
         return message;
     }
 
+    public boolean hasMessage() {
+        return message != null; // && !message.isEmpty();
+    }
+
     public void setMessage(String message) {
         this.message = message;
     }
@@ -65,7 +69,11 @@ public class IrcMessage {
         return getCommand().equalsIgnoreCase("PRIVMSG") && getTarget().startsWith("#");
     }
 
-    public String getSender() {
+    public boolean isDestMe() {
+        return getCommand().equalsIgnoreCase("PRIVMSG") && getTarget().equals(server.getUserProperties().getNickname());
+    }
+
+    private String getSendDest() {
         if (isDestChannel()) {
             return getTarget();
         } else {
@@ -78,6 +86,6 @@ public class IrcMessage {
     }
 
     public void sendChat(String message) {
-        server.getChannel().writeAndFlush("PRIVMSG " + getSender() + " :" + message);
+        server.getChannel().writeAndFlush("PRIVMSG " + getSendDest() + " :" + message);
     }
 }

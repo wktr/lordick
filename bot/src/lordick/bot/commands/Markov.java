@@ -1,7 +1,7 @@
 package lordick.bot.commands;
 
+import lordick.Lordick;
 import lordick.bot.BotCommand;
-import xxx.moparisthebest.irclib.IrcClient;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.sql.*;
@@ -13,7 +13,7 @@ public class Markov extends BotCommand {
 
     private Connection connection;
     private Random randy = new Random();
-    private int replyrate = 2;
+    private int replyrate = 1;
     private int replynick = 100;
 
     public Markov() {
@@ -38,13 +38,6 @@ public class Markov extends BotCommand {
         }
     }
 
-    private static Pattern command = Pattern.compile("chat\\s(\\S+):?\\s*(\\S+)?(?: (\\S+))?", Pattern.CASE_INSENSITIVE);
-
-    @Override
-    public boolean shouldHandleCommand(IrcClient client, IrcMessage message) {
-        return command.matcher(message.getMessage()).find();
-    }
-
     private int s2i(String s, int min, int max) {
         try {
             int i = Integer.parseInt(s);
@@ -61,13 +54,19 @@ public class Markov extends BotCommand {
         return min;
     }
 
+    private static Pattern command = Pattern.compile("(\\S+):?\\s*(\\S+)?(?: (\\S+))?", Pattern.CASE_INSENSITIVE);
+
     @Override
-    public void handleCommand(IrcClient client, IrcMessage message) {
-        Matcher m = command.matcher(message.getMessage());
+    public void handleCommand(Lordick client, String command, IrcMessage message) {
+        if (!message.hasMessage()) {
+            message.sendChatf(getHelp());
+            return;
+        }
+        Matcher m = Markov.command.matcher(message.getMessage());
         if (m.find()) {
             String cmd = m.group(1);
             if (cmd.equalsIgnoreCase("about")) {
-                if (m.group(2) == null || m.group(2).length() == 0) {
+                if (m.group(2) == null || m.group(2).isEmpty()) {
                     message.sendChat("Need context");
                 } else if (randy.nextFloat() * 100 <= replynick) {
                     String markov = markov_find(m.group(2), m.group(3));
@@ -93,17 +92,17 @@ public class Markov extends BotCommand {
                         message.sendChatf("Reply nick set to: %d%%", replynick);
                     }
                 } else {
-                    message.sendChatf("Unknown command: %d%%", cmd);
+                    message.sendChatf("Unknown chat command: %d%%", cmd);
                 }
             } else {
-                message.sendChatf("Unknown command: %d%%", cmd);
+                message.sendChatf("Unknown chat command: %d%%", cmd);
             }
         }
     }
 
     @Override
     public String getHelp() {
-        return "Usage: chat [about|replynick|replyrate] <context>";
+        return "Markov usage: chat [about|replynick|replyrate] <context>";
     }
 
     @Override
@@ -112,7 +111,7 @@ public class Markov extends BotCommand {
     }
 
     @Override
-    public void unhandledMessage(IrcClient client, IrcMessage message) {
+    public void onMessage(Lordick client, IrcMessage message) {
         if (message.isDestChannel()) {
             markov_learn(message.getMessage());
             if (randy.nextFloat() * 100 <= replyrate) {
@@ -241,8 +240,7 @@ public class Markov extends BotCommand {
         }
         int wordcount = randy.nextInt(30) + 10;
         int type = randy.nextInt(3);
-        switch (type)
-        {
+        switch (type) {
             case 0:
                 markov_fill_backwards(result, wordcount, seed1, seed2);
                 break;

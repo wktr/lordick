@@ -19,9 +19,10 @@ import java.util.regex.Pattern;
 
 public class Lordick extends IrcClient {
 
-    private List<BotCommand> commandHandlers = new CopyOnWriteArrayList<BotCommand>();
-    private Map<String, BotCommand> commandList = new ConcurrentHashMap<String, BotCommand>();
-    private String commandListString;
+    public List<BotCommand> commandHandlers = new CopyOnWriteArrayList<BotCommand>();
+    public Map<String, BotCommand> commandList = new ConcurrentHashMap<String, BotCommand>();
+
+    public Map<String, String> propMap = new ConcurrentHashMap<String, String>(); // todo: stuff for this, ie authing
 
     static {
         try {
@@ -31,29 +32,25 @@ public class Lordick extends IrcClient {
         }
     }
 
-    private void addCommandList(String s, BotCommand c) {
-        commandList.put(s, c);
-        if (commandListString == null) {
-            commandListString = s;
-        } else {
-            commandListString += "," + s;
-        }
-    }
-
     public void loadCommandHandlers() {
         commandHandlers.clear();
-        commandListString = null;
         for (Class c : ClassEnumerator.getClassesForPackage(Karma.class.getPackage())) {
             try {
                 BotCommand command = (BotCommand) c.newInstance();
                 commandHandlers.add(command);
+                boolean hasCommand = false;
                 if (command.getCommandList() != null) {
                     for (String s : command.getCommandList()) {
-                        addCommandList(s, command);
+                        commandList.put(s, command);
+                        hasCommand = true;
                     }
                 }
                 if (command.getCommand() != null) {
-                    addCommandList(command.getCommand(), command);
+                    commandList.put(command.getCommand(), command);
+                    hasCommand = true;
+                }
+                if (!hasCommand) {
+                    System.out.println("WARNING: BotCommand has no commands - " + command);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -82,55 +79,37 @@ public class Lordick extends IrcClient {
 
     }
 
-    private static Pattern help = Pattern.compile("help(?:[:]? (\\S+))?");
+    private static Pattern command = Pattern.compile("(\\S+?)(?:[,:]? (.+))?");
 
     @Override
     public void onMessage(IrcMessage message) {
         super.onMessage(message);
-        if (!message.isDestChannel()) {
+        if (!message.hasMessage()) {
             return;
         }
         UserProperties up = message.getServer().getUserProperties();
-        if (message.getMessage().matches("^" + up.getNickname() + ".? .+")) {
+        if (message.getMessage().matches("^" + up.getNickname() + "[:,]? .+") || message.isDestMe()) {
             String text = message.getMessage().substring(message.getMessage().indexOf(' ') + 1);
-            Matcher m = help.matcher(text);
-            if (m.find()) {
+            Matcher m = command.matcher(text);
+            if (m.matches()) {
                 String command = m.group(1);
-                if (command == null) {
-                    message.sendChatf("Help available for: %s", commandListString);
-                } else if (!commandList.containsKey(command)) {
-                    message.sendChatf("No help for command: %s", command);
+                message.setMessage(m.group(2));
+                if (commandList.containsKey(command)) {
+                    try {
+                        commandList.get(command).handleCommand(this, command, message);
+                    } catch (Exception ex) {
+                        message.sendChatf("Exception while handling command %s, %s", command, ex.getMessage());
+                    }
                 } else {
-                    message.sendChatf("Help for %s: %s", command, commandList.get(command).getHelp());
-                }
-            } else {
-                message.setMessage(text);
-                boolean handled = false;
-                for (BotCommand botCommand : commandHandlers) {
-                    if (botCommand.shouldHandleCommand(this, message)) {
-                        handled = true;
-                        botCommand.handleCommand(this, message);
-                    }
-                }
-                if (!handled) {
                     for (BotCommand botCommand : commandHandlers) {
-                        botCommand.unhandledCommand(this, message);
+                        botCommand.unhandledCommand(this, command, message);
                     }
                 }
+                return;
             }
-        } else {
-            boolean handled = false;
-            for (BotCommand botCommand : commandHandlers) {
-                if (botCommand.shouldHandleMessage(this, message)) {
-                    handled = true;
-                    botCommand.handleMessage(this, message);
-                }
-            }
-            if (!handled) {
-                for (BotCommand botCommand : commandHandlers) {
-                    botCommand.unhandledMessage(this, message);
-                }
-            }
+        }
+        for (BotCommand botCommand : commandHandlers) {
+            botCommand.onMessage(this, message);
         }
     }
 }

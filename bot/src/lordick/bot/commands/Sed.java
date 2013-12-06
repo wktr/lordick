@@ -1,7 +1,7 @@
 package lordick.bot.commands;
 
+import lordick.Lordick;
 import lordick.bot.BotCommand;
-import xxx.moparisthebest.irclib.IrcClient;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.util.Map;
@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 public class Sed extends BotCommand {
 
-    private static Pattern SED_REGEX = Pattern.compile("^s([\\/|,!])(.*?)\\1(.*?)\\1(g?)");
+    private static Pattern SED_REGEX = Pattern.compile("^s([/|,!])(.*?)\\1(.*?)\\1(g?)");
 
     private Map<String, String> lastMessage = new ConcurrentHashMap<String, String>();
 
@@ -26,24 +26,15 @@ public class Sed extends BotCommand {
     }
 
     @Override
-    public boolean shouldHandleMessage(IrcClient client, IrcMessage message) {
-        if (message.isDestChannel()) {
-            boolean sedmatch = message.getMessage().matches(SED_REGEX.pattern());
-            if (!sedmatch) {
-                lastMessage.put(message.getSource(), message.getMessage());
-            }
-            return sedmatch;
-        }
-        return false;
-    }
-
-    @Override
-    public void handleMessage(IrcClient client, IrcMessage message) {
-        if (!lastMessage.containsKey(message.getSource())) {
+    public void onMessage(Lordick client, IrcMessage message) {
+        if (!message.isDestChannel() || !message.hasMessage()) {
             return;
         }
         Matcher m = SED_REGEX.matcher(message.getMessage());
         if (m.find()) {
+            if (!lastMessage.containsKey(message.getSource())) {
+                return;
+            }
             String last = lastMessage.get(message.getSource());
             String reply;
             if (m.group(4) == null || m.group(4).equals("")) {
@@ -55,6 +46,8 @@ public class Sed extends BotCommand {
                 return;
             }
             message.sendChatf("%s meant: %s", message.getHostmask().getNick(), reply);
+        } else {
+            lastMessage.put(message.getSource(), message.getMessage());
         }
     }
 }

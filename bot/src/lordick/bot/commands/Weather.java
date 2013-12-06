@@ -1,7 +1,7 @@
 package lordick.bot.commands;
 
+import lordick.Lordick;
 import lordick.bot.BotCommand;
-import xxx.moparisthebest.irclib.IrcClient;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.io.BufferedReader;
@@ -29,14 +29,9 @@ public class Weather extends BotCommand {
     }
 
     @Override
-    public boolean shouldHandleCommand(IrcClient client, IrcMessage message) {
-        return message.isDestChannel() && message.getMessage().startsWith(getCommand());
-    }
-
-    @Override
-    public void handleCommand(IrcClient client, IrcMessage message) {
+    public void handleCommand(Lordick client, String command, IrcMessage message) {
         String location;
-        if (!message.getMessage().contains(" ")) {
+        if (!message.hasMessage()) {
             if (!lastWeather.containsKey(message.getHostmask().getNick())) {
                 message.sendChatf("%s: No previous location stored", message.getHostmask().getNick());
                 return;
@@ -44,7 +39,7 @@ public class Weather extends BotCommand {
                 location = lastWeather.get(message.getHostmask().getNick());
             }
         } else {
-            location = message.getMessage().substring(message.getMessage().indexOf(" ") + 1);
+            location = message.getMessage();
         }
         location = location.replaceAll("\\s+", "");
         String data = readurl(WEATHER_URL + location);

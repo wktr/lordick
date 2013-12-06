@@ -280,7 +280,7 @@ public class Expression {
          * @param parameters Parameters will be passed by the expression evaluator as a
          *                   {@link List} of {@link BigDecimal} values.
          * @return The function must return a new {@link BigDecimal} value as a
-         *         computing result.
+         * computing result.
          */
         public abstract BigDecimal eval(List<BigDecimal> parameters);
     }
@@ -749,7 +749,7 @@ public class Expression {
      *
      * @param expression The input expression in infx.
      * @return A RPN representation of the expression, with each token as a list
-     *         member.
+     * member.
      */
     private List<String> shuntingYard(String expression) {
         List<String> outputQueue = new ArrayList<String>();
@@ -876,7 +876,7 @@ public class Expression {
      *
      * @param operator The operator to add.
      * @return The previous operator with that name, or <code>null</code> if
-     *         there was none.
+     * there was none.
      */
     public Operator addOperator(Operator operator) {
         return operators.put(operator.getOper(), operator);
@@ -887,7 +887,7 @@ public class Expression {
      *
      * @param function The function to add.
      * @return The previous operator with that name, or <code>null</code> if
-     *         there was none.
+     * there was none.
      */
     public Function addFunction(Function function) {
         return functions.put(function.getName(), function);
