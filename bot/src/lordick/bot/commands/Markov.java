@@ -146,11 +146,17 @@ public class Markov extends BotCommand {
     private String markov_find(String seed1, String seed2) {
         try {
             PreparedStatement ps;
-            ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_a = ? or seed_b = ? or seed_b = ? order by random() limit 1");
-            ps.setString(1, seed1);
-            ps.setString(2, (seed2 == null ? seed1 : seed2));
-            ps.setString(3, seed1);
-            ps.setString(4, (seed2 == null ? seed1 : seed2));
+            if (seed2 == null) {
+                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_b = ? order by random() limit 1");
+                ps.setString(1, seed1);
+                ps.setString(2, seed1);
+            } else {
+                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a in (?, ?) or seed_b in (?, ?) order by random() limit 1");
+                ps.setString(1, seed1);
+                ps.setString(2, seed2);
+                ps.setString(3, seed1);
+                ps.setString(4, seed2);
+            }
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 String found1 = rs.getString(1);
@@ -187,9 +193,44 @@ public class Markov extends BotCommand {
         return null;
     }
 
+    private int markov_fill_backwards(StringBuilder result, int wordcount, String seed1, String seed2) {
+        int count = 0;
+        for (int i = 0; i < wordcount; i++) {
+            String seed0 = markov_previousseed(seed1, seed2);
+            if (seed0 == null || seed0.equalsIgnoreCase("\n")) {
+                break;
+            }
+            count++;
+            if (result.length() > 0) {
+                result.insert(0, ' ');
+            }
+            result.insert(0, seed0);
+            seed2 = seed1;
+            seed1 = seed0;
+        }
+        return count;
+    }
+
+    private int markov_fill_forwards(StringBuilder result, int wordcount, String seed1, String seed2) {
+        int count = 0;
+        for (int i = 0; i < wordcount / 2; i++) {
+            String seed3 = markov_nextseed(seed1, seed2);
+            if (seed3 == null || seed3.equalsIgnoreCase("\n")) {
+                break;
+            }
+            count++;
+            if (result.length() > 0) {
+                result.append(' ');
+            }
+            result.append(seed3);
+            seed1 = seed2;
+            seed2 = seed3;
+        }
+        return count;
+    }
+
     private String markov_generate(String seed1, String seed2) {
         //System.out.printf("Start seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
-        int wordcount = randy.nextInt(20) + 10;
         StringBuilder result = new StringBuilder();
         if (!seed1.equalsIgnoreCase("\r")) {
             result.append(seed1);
@@ -198,29 +239,20 @@ public class Markov extends BotCommand {
         if (!seed2.equalsIgnoreCase("\r")) {
             result.append(seed2);
         }
-        for (int i = 0; i < wordcount / 2; i++) {
-            String seed0 = markov_previousseed(seed1, seed2);
-            if (seed0 == null || seed0.equalsIgnoreCase("\n")) {
+        int wordcount = randy.nextInt(30) + 10;
+        int type = randy.nextInt(3);
+        switch (type)
+        {
+            case 0:
+                markov_fill_backwards(result, wordcount, seed1, seed2);
                 break;
-            }
-            if (result.length() > 0) {
-                result.insert(0, ' ');
-            }
-            result.insert(0, seed0);
-            seed2 = seed1;
-            seed1 = seed0;
-        }
-        for (int i = 0; i < wordcount / 2; i++) {
-            String seed3 = markov_nextseed(seed1, seed2);
-            if (seed3 == null || seed3.equalsIgnoreCase("\n")) {
+            case 1:
+                markov_fill_forwards(result, wordcount, seed1, seed2);
                 break;
-            }
-            if (result.length() > 0) {
-                result.append(' ');
-            }
-            result.append(seed3);
-            seed1 = seed2;
-            seed2 = seed3;
+            default:
+                int num = markov_fill_backwards(result, wordcount / 2, seed1, seed2);
+                markov_fill_forwards(result, wordcount - num, seed1, seed2);
+                break;
         }
         if (result.length() > 0) {
             return result.toString().trim();
