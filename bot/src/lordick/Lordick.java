@@ -99,13 +99,14 @@ public class Lordick extends IrcClient {
                         commandList.get(command).handleCommand(this, command, message);
                     } catch (Exception ex) {
                         message.sendChatf("Exception while handling command %s, %s", command, ex.getMessage());
+                        ex.printStackTrace();
                     }
+                    return;
                 } else {
                     for (BotCommand botCommand : commandHandlers) {
                         botCommand.unhandledCommand(this, command, message);
                     }
                 }
-                return;
             }
         }
         for (BotCommand botCommand : commandHandlers) {

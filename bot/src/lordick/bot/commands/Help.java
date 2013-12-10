@@ -54,6 +54,6 @@ public class Help extends BotCommand {
 
     @Override
     public void unhandledCommand(Lordick client, String command, IrcMessage message) {
-        message.sendChatf("Unknown command: %s", command);
+        // message.sendChatf("Unknown command: %s", command);
     }
 }

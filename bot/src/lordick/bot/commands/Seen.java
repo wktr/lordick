@@ -48,7 +48,7 @@ public class Seen extends BotCommand {
             newSeen(message.getHostmask().getNick(), "joining " + notnullpls(message.getMessage()));
         } else if (message.getCommand().equals("PART")) {
             newSeen(message.getHostmask().getNick(), "leaving " + message.getTargetParams() + ": " + notnullpls(message.getMessage()));
-        } else if (message.getCommand().equals("PART")) {
+        } else if (message.getCommand().equals("QUIT")) {
             newSeen(message.getHostmask().getNick(), "quitting: " + notnullpls(message.getMessage()));
         } else if (message.getCommand().equals("NICK")) {
             newSeen(message.getHostmask().getNick(), "changing nick to: " + message.getTargetParams());

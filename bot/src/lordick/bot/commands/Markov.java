@@ -92,10 +92,10 @@ public class Markov extends BotCommand {
                         message.sendChatf("Reply nick set to: %d%%", replynick);
                     }
                 } else {
-                    message.sendChatf("Unknown chat command: %d%%", cmd);
+                    message.sendChatf("Unknown chat command: %s", cmd);
                 }
             } else {
-                message.sendChatf("Unknown chat command: %d%%", cmd);
+                message.sendChatf("Unknown chat command: %s", cmd);
             }
         }
     }
@@ -175,16 +175,7 @@ public class Markov extends BotCommand {
             if (rs.next()) {
                 String found1 = rs.getString(1);
                 String found2 = rs.getString(2);
-                String markov = markov_generate(found1, found2);
-                if (markov != null) {
-                    if (!found2.equalsIgnoreCase("\n")) {
-                        markov = found2 + " " + markov;
-                    }
-                    if (!found1.equalsIgnoreCase("\n")) {
-                        markov = found1 + " " + markov;
-                    }
-                    return markov;
-                }
+                return markov_generate(found1, found2);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -231,11 +222,17 @@ public class Markov extends BotCommand {
     private String markov_generate(String seed1, String seed2) {
         //System.out.printf("Start seeds: %s - %s\n", seed1.replace("\n", "\\n"), seed2.replace("\n", "\\n"));
         StringBuilder result = new StringBuilder();
-        if (!seed1.equalsIgnoreCase("\r")) {
+        if (seed1 == null) {
+            seed1 = "\n";
+        }
+        if (seed2 == null) {
+            seed2 = "\n";
+        }
+        if (!seed1.equalsIgnoreCase("\n")) {
             result.append(seed1);
             result.append(' ');
         }
-        if (!seed2.equalsIgnoreCase("\r")) {
+        if (!seed2.equalsIgnoreCase("\n")) {
             result.append(seed2);
         }
         int wordcount = randy.nextInt(30) + 10;
