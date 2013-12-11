@@ -164,16 +164,16 @@ public class Lordick extends IrcClient {
     private void connectDatabase() {
         try {
             databaseConnection = DriverManager.getConnection("jdbc:sqlite:lordick.db");
-            databaseConnection.createStatement().executeUpdate("create table if not exists properties (server TEXT, key TEXT, value TEXT, unique(server, key, value) on conflict replace)");
+            databaseConnection.createStatement().executeUpdate("create table if not exists keyvalues (server TEXT, key TEXT, value TEXT, unique(server, key, value) on conflict replace)");
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
         }
     }
 
-    public String getProperty(IrcServer server, String key) {
+    public String getKeyValue(IrcServer server, String key) {
         try {
-            PreparedStatement ps = databaseConnection.prepareStatement("select value from properties where server = ? and key = ?");
+            PreparedStatement ps = databaseConnection.prepareStatement("select value from keyvalues where server = ? and key = ?");
             ps.setString(1, server.getNetworkProperties().getHost());
             ps.setString(2, key);
             ResultSet rs = ps.executeQuery();
@@ -181,20 +181,20 @@ public class Lordick extends IrcClient {
                 return rs.getString(1);
             }
         } catch (Exception e) {
-            // e.printStackTrace();
+            e.printStackTrace();
         }
         return null;
     }
 
-    public void setProperty(IrcServer server, String key, String value) {
+    public void setKeyValue(IrcServer server, String key, String value) {
         try {
-            PreparedStatement ps = databaseConnection.prepareStatement("insert into properties set (server, key, value) values (?, ?, ?)");
+            PreparedStatement ps = databaseConnection.prepareStatement("insert into keyvalues (server, key, value) values (?, ?, ?)");
             ps.setString(1, server.getNetworkProperties().getHost());
             ps.setString(2, key);
             ps.setString(3, value);
             ps.executeUpdate();
         } catch (Exception e) {
-            // e.printStackTrace();
+            e.printStackTrace();
         }
     }
 
