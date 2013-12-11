@@ -2,19 +2,20 @@ package lordick.bot.commands;
 
 import com.udojava.evalex.Expression;
 import lordick.Lordick;
-import lordick.bot.BotCommand;
+import lordick.bot.CommandListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.math.BigDecimal;
 
-public class Calc extends BotCommand {
+@SuppressWarnings("unused")
+public class Calc implements CommandListener {
     @Override
     public String getHelp() {
         return "Usage; calc expression";
     }
 
     @Override
-    public String getCommand() {
+    public String getCommands() {
         return "calc";
     }
 

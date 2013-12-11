@@ -6,6 +6,7 @@ import xxx.moparisthebest.irclib.properties.UserProperties;
 
 import java.util.Random;
 
+@SuppressWarnings("unused")
 public class Nickname implements IrcMessageHandler {
     @Override
     public boolean shouldHandle(IrcMessage message) {

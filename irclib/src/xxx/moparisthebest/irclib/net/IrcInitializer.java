@@ -33,7 +33,6 @@ public class IrcInitializer extends ChannelInitializer<SocketChannel> {
         ChannelPipeline pipeline = socketChannel.pipeline();
 
         if (ssl) {
-            // todo: actually check certs
             SSLContext context = SSLContext.getInstance("TLS");
             context.init(null, IrcSSLTrustManagerFactory.getTrustManagers(), null);
             SSLEngine engine = context.createSSLEngine();

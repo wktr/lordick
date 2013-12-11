@@ -7,6 +7,7 @@ import xxx.moparisthebest.irclib.properties.UserProperties;
 
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("unused")
 public class Rejoin implements IrcMessageHandler {
     @Override
     public boolean shouldHandle(IrcMessage message) {

@@ -1,7 +1,10 @@
 package lordick;
 
-import lordick.bot.BotCommand;
-import lordick.bot.commands.Karma;
+import lordick.bot.CommandListener;
+import lordick.bot.InitListener;
+import lordick.bot.MessageListener;
+import lordick.bot.UnhandledCommandListener;
+import lordick.bot.commands.Help;
 import xxx.moparisthebest.irclib.IrcClient;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 import xxx.moparisthebest.irclib.net.IrcServer;
@@ -9,6 +12,10 @@ import xxx.moparisthebest.irclib.properties.NetworkProperties;
 import xxx.moparisthebest.irclib.properties.UserProperties;
 import xxx.moparisthebest.util.ClassEnumerator;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,38 +26,51 @@ import java.util.regex.Pattern;
 
 public class Lordick extends IrcClient {
 
-    public List<BotCommand> commandHandlers = new CopyOnWriteArrayList<BotCommand>();
-    public Map<String, BotCommand> commandList = new ConcurrentHashMap<String, BotCommand>();
+    // region event listeners
 
-    public Map<String, String> propMap = new ConcurrentHashMap<String, String>(); // todo: stuff for this, ie authing
+    private List<MessageListener> messageListeners = new CopyOnWriteArrayList<MessageListener>();
+    private List<UnhandledCommandListener> unhandledCommandListeners = new CopyOnWriteArrayList<UnhandledCommandListener>();
+    private Map<String, CommandListener> commandListeners = new ConcurrentHashMap<String, CommandListener>();
 
-    static {
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    public List<MessageListener> getMessageListeners() {
+        return messageListeners;
     }
 
-    public void loadCommandHandlers() {
-        commandHandlers.clear();
-        for (Class c : ClassEnumerator.getClassesForPackage(Karma.class.getPackage())) {
+    public List<UnhandledCommandListener> getUnhandledCommandListeners() {
+        return unhandledCommandListeners;
+    }
+
+    public Map<String, CommandListener> getCommandListeners() {
+        return commandListeners;
+    }
+
+    private void loadListeners() {
+        commandListeners.clear();
+        unhandledCommandListeners.clear();
+        messageListeners.clear();
+        for (Class c : ClassEnumerator.getClassesForPackage(Help.class.getPackage())) {
             try {
-                BotCommand command = (BotCommand) c.newInstance();
-                commandHandlers.add(command);
-                boolean hasCommand = false;
-                if (command.getCommandList() != null) {
-                    for (String s : command.getCommandList()) {
-                        commandList.put(s, command);
-                        hasCommand = true;
+                Object o = c.newInstance();
+                if (InitListener.class.isAssignableFrom(c)) {
+                    boolean b = ((InitListener) o).init(this);
+                    if (!b) {
+                        System.out.println("Not loading listener: " + o);
+                        continue;
                     }
                 }
-                if (command.getCommand() != null) {
-                    commandList.put(command.getCommand(), command);
-                    hasCommand = true;
+                if (CommandListener.class.isAssignableFrom(c)) {
+                    CommandListener command = (CommandListener) o;
+                    for (String s : command.getCommands().split(",")) {
+                        commandListeners.put(s, command);
+                    }
                 }
-                if (!hasCommand) {
-                    System.out.println("WARNING: BotCommand has no commands - " + command);
+                if (UnhandledCommandListener.class.isAssignableFrom(c)) {
+                    UnhandledCommandListener unhandled = (UnhandledCommandListener) o;
+                    unhandledCommandListeners.add(unhandled);
+                }
+                if (MessageListener.class.isAssignableFrom(c)) {
+                    MessageListener message = (MessageListener) o;
+                    messageListeners.add(message);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -58,12 +78,9 @@ public class Lordick extends IrcClient {
         }
     }
 
-    public void start(String... homechans) {
-        loadCommandHandlers();
-        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, homechans);
-        NetworkProperties np = new NetworkProperties("irc.moparisthebest.xxx", 6667, false);
-        connect(up, np);
-    }
+    // endregion
+
+    // region irc overrides
 
     @Override
     public void onDisconnect(IrcServer server) {
@@ -76,7 +93,6 @@ public class Lordick extends IrcClient {
                 connect(up, np);
             }
         }, 10, TimeUnit.SECONDS);
-
     }
 
     private static Pattern command = Pattern.compile("(\\S+?)(?:[,:]? (.+))?");
@@ -94,23 +110,104 @@ public class Lordick extends IrcClient {
             if (m.matches()) {
                 String command = m.group(1);
                 message.setMessage(m.group(2));
-                if (commandList.containsKey(command)) {
+                if (commandListeners.containsKey(command)) {
                     try {
-                        commandList.get(command).handleCommand(this, command, message);
+                        commandListeners.get(command).handleCommand(this, command, message);
                     } catch (Exception ex) {
                         message.sendChatf("Exception while handling command %s, %s", command, ex.getMessage());
                         ex.printStackTrace();
                     }
                     return;
                 } else {
-                    for (BotCommand botCommand : commandHandlers) {
-                        botCommand.unhandledCommand(this, command, message);
+                    for (UnhandledCommandListener listener : unhandledCommandListeners) {
+                        listener.unhandledCommand(this, command, message);
                     }
                 }
             }
         }
-        for (BotCommand botCommand : commandHandlers) {
-            botCommand.onMessage(this, message);
+        for (MessageListener listener : messageListeners) {
+            listener.onMessage(this, message);
         }
     }
+
+    // endregion
+
+    // region database
+
+    static {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
+    }
+
+    private Connection databaseConnection;
+
+    public Connection getDatabaseConnection() {
+        return databaseConnection;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            if (databaseConnection != null) {
+                databaseConnection.commit();
+                databaseConnection.close();
+            }
+        } finally {
+            super.finalize();
+        }
+    }
+
+    private void connectDatabase() {
+        try {
+            databaseConnection = DriverManager.getConnection("jdbc:sqlite:lordick.db");
+            databaseConnection.createStatement().executeUpdate("create table if not exists properties (server TEXT, key TEXT, value TEXT, unique(server, key, value) on conflict replace)");
+            // databaseConnection.createStatement().executeUpdate("create table if not exists auth (server TEXT, hostmask TEXT, password TEXT, unique(server, hostmask, password) on conflict replace)");
+            // todo: auth command
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
+    }
+
+    public String getProperty(IrcServer server, String key) {
+        try {
+            PreparedStatement ps = databaseConnection.prepareStatement("select value from properties where server = ? and key = ?");
+            ps.setString(1, server.getNetworkProperties().getHost());
+            ps.setString(2, key);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString(1);
+            }
+        } catch (Exception e) {
+            // e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void setProperty(IrcServer server, String key, String value) {
+        try {
+            PreparedStatement ps = databaseConnection.prepareStatement("insert into properties set (server, key, value) values (?, ?, ?)");
+            ps.setString(1, server.getNetworkProperties().getHost());
+            ps.setString(2, key);
+            ps.setString(3, value);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            // e.printStackTrace();
+        }
+    }
+
+    // endregion
+
+    public void start(String... homechans) {
+        connectDatabase();
+        loadListeners();
+        UserProperties up = new UserProperties("lordick", "lordick", "lordick", "lordick", null, homechans);
+        NetworkProperties np = new NetworkProperties("irc.moparisthebest.xxx", 6667, false);
+        connect(up, np);
+    }
+
 }

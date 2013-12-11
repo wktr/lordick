@@ -1,41 +1,59 @@
 package lordick.bot.commands;
 
 import lordick.Lordick;
-import lordick.bot.BotCommand;
+import lordick.bot.CommandListener;
+import lordick.bot.InitListener;
+import lordick.bot.MessageListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
+import java.io.File;
 import java.sql.*;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Markov extends BotCommand {
+@SuppressWarnings("unused")
+public class Markov implements CommandListener, MessageListener, InitListener {
 
     private Connection connection;
     private Random randy = new Random();
     private int replyrate = 1;
     private int replynick = 100;
 
-    public Markov() {
-        try {
-            connection = DriverManager.getConnection("jdbc:sqlite:markov.db");
-            //connection.setAutoCommit(false);
-            connection.createStatement().executeUpdate("create table if not exists markov (seed_a TEXT, seed_b TEXT, seed_c TEXT, unique(seed_a, seed_b, seed_c) on conflict ignore)");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
-    protected void finalize() throws Throwable {
+    public boolean init(Lordick client) {
         try {
-            if (connection != null) {
-                connection.commit();
-                connection.close();
-            }
-        } finally {
-            super.finalize();
+            connection = client.getDatabaseConnection();
+            connection.createStatement().executeUpdate("create table if not exists markov (seed_a TEXT, seed_b TEXT, seed_c TEXT, unique(seed_a, seed_b, seed_c) on conflict ignore)");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
+        File f = new File("markov.db");
+        if (f.exists()) {
+            try {
+                System.out.println("Importing old markov.db... ");
+                connection.setAutoCommit(false);
+                Connection c = DriverManager.getConnection("jdbc:sqlite:markov.db");
+                ResultSet rs = c.createStatement().executeQuery("select seed_a, seed_b, seed_c from markov");
+                while (rs.next()) {
+                    markov_insert(rs.getString(1), rs.getString(2), rs.getString(3));
+                }
+                c.close();
+                if (!f.delete()) {
+                    f.deleteOnExit();
+                }
+            } catch (Exception e) {
+                System.out.println("Error importing old markov.db");
+                e.printStackTrace();
+            } finally {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return true;
     }
 
     private int s2i(String s, int min, int max) {
@@ -106,7 +124,7 @@ public class Markov extends BotCommand {
     }
 
     @Override
-    public String getCommand() {
+    public String getCommands() {
         return "chat";
     }
 
@@ -123,20 +141,24 @@ public class Markov extends BotCommand {
         }
     }
 
+    private void markov_insert(String seed1, String seed2, String seed3) {
+        try {
+            PreparedStatement ps = connection.prepareStatement("insert into markov (seed_a, seed_b, seed_c) values (?, ?, ?)");
+            ps.setString(1, seed1);
+            ps.setString(2, seed2);
+            ps.setString(3, seed3);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void markov_learn(String input) {
         String seed1, seed2;
         seed1 = seed2 = "\n";
         String[] words = input.split(" ");
         for (String seed3 : words) {
-            try {
-                PreparedStatement ps = connection.prepareStatement("insert into markov (seed_a, seed_b, seed_c) values (?, ?, ?)");
-                ps.setString(1, seed1);
-                ps.setString(2, seed2);
-                ps.setString(3, seed3);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            markov_insert(seed1, seed2, seed3);
             seed1 = seed2;
             seed2 = seed3;
         }
@@ -146,11 +168,11 @@ public class Markov extends BotCommand {
         try {
             PreparedStatement ps;
             if (seed2 == null) {
-                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_b = ? order by random() limit 1");
+                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_b = ? COLLATE NOCASE order by random() limit 1");
                 ps.setString(1, seed1);
                 ps.setString(2, seed1);
             } else {
-                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a in (?, ?) or seed_b in (?, ?) order by random() limit 1");
+                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a in (?, ?) or seed_b in (?, ?) COLLATE NOCASE order by random() limit 1");
                 ps.setString(1, seed1);
                 ps.setString(2, seed2);
                 ps.setString(3, seed1);

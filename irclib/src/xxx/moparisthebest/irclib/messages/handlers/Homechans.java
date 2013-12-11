@@ -3,6 +3,7 @@ package xxx.moparisthebest.irclib.messages.handlers;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 import xxx.moparisthebest.irclib.messages.IrcMessageHandler;
 
+@SuppressWarnings("unused")
 public class Homechans implements IrcMessageHandler {
 
     @Override

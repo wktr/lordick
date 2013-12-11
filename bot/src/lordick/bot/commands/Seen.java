@@ -1,13 +1,15 @@
 package lordick.bot.commands;
 
 import lordick.Lordick;
-import lordick.bot.BotCommand;
+import lordick.bot.CommandListener;
+import lordick.bot.MessageListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Seen extends BotCommand {
+@SuppressWarnings("unused")
+public class Seen implements CommandListener, MessageListener {
 
     private Map<String, String> lastSeenEvent = new ConcurrentHashMap<String, String>();
     private Map<String, Long> lastSeenTime = new ConcurrentHashMap<String, Long>();
@@ -18,7 +20,7 @@ public class Seen extends BotCommand {
     }
 
     @Override
-    public String getCommand() {
+    public String getCommands() {
         return "seen";
     }
 

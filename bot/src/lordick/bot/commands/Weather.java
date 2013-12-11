@@ -1,7 +1,7 @@
 package lordick.bot.commands;
 
 import lordick.Lordick;
-import lordick.bot.BotCommand;
+import lordick.bot.CommandListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.io.BufferedReader;
@@ -12,11 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Weather extends BotCommand {
+@SuppressWarnings("unused")
+public class Weather implements CommandListener {
 
     private static final String WEATHER_URL = "http://mobile.wunderground.com/cgi-bin/findweather/getForecast?brand=mobile&query=";
     private static Pattern table = Pattern.compile("<table border=\"1\" width=\"100%\">(.+?)</table>");
-    private Map<String, String> lastWeather = new ConcurrentHashMap<String, String>();
+    private Map<String, String> lastWeather = new ConcurrentHashMap<String, String>(); // todo: save this in the db instead
 
     @Override
     public String getHelp() {
@@ -24,7 +25,7 @@ public class Weather extends BotCommand {
     }
 
     @Override
-    public String getCommand() {
+    public String getCommands() {
         return "weather";
     }
 
@@ -42,7 +43,7 @@ public class Weather extends BotCommand {
             location = message.getMessage();
         }
         location = location.replaceAll("\\s+", "");
-        String data = readurl(WEATHER_URL + location);
+        String data = readurl(WEATHER_URL + location); // todo: spin this off as a job/future
         if (data != null) {
             Matcher m = table.matcher(data.replaceAll("\t+", ""));
             if (m.find()) {

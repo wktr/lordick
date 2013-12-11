@@ -1,7 +1,8 @@
 package lordick.bot.commands;
 
 import lordick.Lordick;
-import lordick.bot.BotCommand;
+import lordick.bot.CommandListener;
+import lordick.bot.MessageListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.util.Map;
@@ -9,11 +10,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Sed extends BotCommand {
+@SuppressWarnings("unused")
+public class Sed implements CommandListener, MessageListener {
 
     private static Pattern SED_REGEX = Pattern.compile("^s([/|,!])(.*?)\\1(.*?)\\1(g?)");
 
     private Map<String, String> lastMessage = new ConcurrentHashMap<String, String>();
+
+    @Override
+    public void handleCommand(Lordick client, String command, IrcMessage message) {
+        message.sendChat(getHelp());
+    }
 
     @Override
     public String getHelp() {
@@ -21,7 +28,7 @@ public class Sed extends BotCommand {
     }
 
     @Override
-    public String getCommand() {
+    public String getCommands() {
         return "sed";
     }
 

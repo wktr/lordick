@@ -1,37 +1,58 @@
 package lordick.bot.commands;
 
 import lordick.Lordick;
-import lordick.bot.BotCommand;
+import lordick.bot.CommandListener;
+import lordick.bot.InitListener;
+import lordick.bot.MessageListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
+import java.io.File;
 import java.sql.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Karma extends BotCommand {
+@SuppressWarnings("unused")
+public class Karma implements CommandListener, MessageListener, InitListener {
 
     private Connection connection;
 
-    public Karma() {
-        try {
-            connection = DriverManager.getConnection("jdbc:sqlite:karma.db");
-            //connection.setAutoCommit(false);
-            connection.createStatement().executeUpdate("create table if not exists karma (name TEXT UNIQUE, score INTEGER)");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
-    protected void finalize() throws Throwable {
+    public boolean init(Lordick client) {
         try {
-            if (connection != null) {
-                connection.commit();
-                connection.close();
-            }
-        } finally {
-            super.finalize();
+            connection = client.getDatabaseConnection();
+            connection.createStatement().executeUpdate("create table if not exists karma (name TEXT UNIQUE, score INTEGER)");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
+        File f = new File("karma.db");
+        if (f.exists()) {
+            try {
+                System.out.println("Importing old karma.db... ");
+                connection.setAutoCommit(false);
+                Connection c = DriverManager.getConnection("jdbc:sqlite:karma.db");
+                ResultSet rs = c.createStatement().executeQuery("select name, score from karma");
+                while (rs.next()) {
+                    PreparedStatement ps = connection.prepareStatement("insert or replace into karma (name, score) values (?, ?)");
+                    ps.setString(1, rs.getString(1));
+                    ps.setInt(2, rs.getInt(2));
+                    ps.executeUpdate();
+                }
+                c.close();
+                if (!f.delete()) {
+                    f.deleteOnExit();
+                }
+            } catch (Exception e) {
+                System.out.println("Error importing old karma.db");
+                e.printStackTrace();
+            } finally {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return true;
     }
 
     @Override
@@ -45,7 +66,7 @@ public class Karma extends BotCommand {
             nick = nick.substring(nick.indexOf(" ") + 1);
         }
         if (nick.isEmpty()) {
-            message.sendChatf("pls give something for rep");
+            message.sendChatf("pls give something for %s", command);
             return;
         }
         try {
@@ -54,9 +75,9 @@ public class Karma extends BotCommand {
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 int score = rs.getInt(1);
-                message.sendChatf("karma for %s: %d", nick, score);
+                message.sendChatf("%s for %s: %d", command, nick, score);
             } else {
-                message.sendChatf("no karma for %s", nick);
+                message.sendChatf("no %s for %s", command, nick);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -69,8 +90,8 @@ public class Karma extends BotCommand {
     }
 
     @Override
-    public String[] getCommandList() {
-        return new String[]{"karma", "rep"};
+    public String getCommands() {
+        return "karma,rep";
     }
 
     private static Pattern karma = Pattern.compile("(?:(\\S+)\\s?\\+\\++)");

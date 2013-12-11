@@ -1,10 +1,11 @@
 package lordick.bot.commands;
 
 import lordick.Lordick;
-import lordick.bot.BotCommand;
+import lordick.bot.CommandListener;
+import lordick.bot.UnhandledCommandListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
-public class Help extends BotCommand {
+public class Help implements UnhandledCommandListener, CommandListener {
 
     @Override
     public String getHelp() {
@@ -12,7 +13,7 @@ public class Help extends BotCommand {
     }
 
     @Override
-    public String getCommand() {
+    public String getCommands() {
         return "help";
     }
 
@@ -20,30 +21,20 @@ public class Help extends BotCommand {
     public void handleCommand(Lordick client, String command, IrcMessage message) {
         if (!message.hasMessage()) {
             StringBuilder commandList = new StringBuilder();
-            for (BotCommand botCommand : client.commandHandlers) {
-                if (botCommand.getCommandList() != null) {
-                    for (String s : botCommand.getCommandList()) {
-                        if (commandList.length() > 0) {
-                            commandList.append(',');
-                        }
-                        commandList.append(s.toLowerCase());
-                    }
+            for (String s : client.getCommandListeners().keySet()) {
+                if (commandList.length() > 0) {
+                    commandList.append(',');
                 }
-                if (botCommand.getCommand() != null) {
-                    if (commandList.length() > 0) {
-                        commandList.append(',');
-                    }
-                    commandList.append(botCommand.getCommand().toLowerCase());
-                }
+                commandList.append(s.toLowerCase());
             }
             message.sendChatf("Available commands: %s", commandList.toString());
             return;
         }
         String cmd = message.getMessage().toLowerCase();
-        if (!client.commandList.containsKey(cmd)) {
+        if (!client.getCommandListeners().containsKey(cmd)) {
             message.sendChatf("No help for command: %s", cmd);
         } else {
-            String help = client.commandList.get(cmd).getHelp();
+            String help = client.getCommandListeners().get(cmd).getHelp();
             if (help == null || help.isEmpty()) {
                 message.sendChatf("No help available for: %s", cmd);
             } else {
