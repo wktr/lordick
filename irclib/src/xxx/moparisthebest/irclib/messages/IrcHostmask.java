@@ -36,4 +36,26 @@ public class IrcHostmask {
     public String getHost() {
         return host;
     }
+
+    @Override
+    public int hashCode() {
+        return getNick().hashCode() + getIdent().hashCode() + getHost().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof IrcHostmask)) {
+            return false;
+        }
+        else if (super.equals(obj)) {
+            return true;
+        } else {
+            return obj.toString().equals(this.toString());
+        }
+    }
+
+    @Override
+    public String toString() {
+        return getNick() + "!" + getIdent() + "@" + getHost();
+    }
 }
