@@ -165,8 +165,6 @@ public class Lordick extends IrcClient {
         try {
             databaseConnection = DriverManager.getConnection("jdbc:sqlite:lordick.db");
             databaseConnection.createStatement().executeUpdate("create table if not exists properties (server TEXT, key TEXT, value TEXT, unique(server, key, value) on conflict replace)");
-            // databaseConnection.createStatement().executeUpdate("create table if not exists auth (server TEXT, hostmask TEXT, password TEXT, unique(server, hostmask, password) on conflict replace)");
-            // todo: auth command
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
