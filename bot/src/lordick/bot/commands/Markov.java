@@ -94,7 +94,7 @@ public class Markov implements CommandListener, MessageListener, InitListener {
                         message.sendChat(markov);
                     }
                 }
-            } else if (message.getHostmask().getNick().equalsIgnoreCase("exemplar")) {
+            } else if (message.getHostmask().getNick().equalsIgnoreCase("exemplar") && message.getHostmask().getHost().endsWith(".xxx")) {
                 if (cmd.equalsIgnoreCase("replyrate")) {
                     if (m.group(2) == null) {
                         message.sendChatf("Reply rate is: %d%%", replyrate);
