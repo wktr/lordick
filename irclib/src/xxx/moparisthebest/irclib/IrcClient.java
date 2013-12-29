@@ -18,7 +18,7 @@ import xxx.moparisthebest.irclib.properties.UserProperties;
 
 public class IrcClient {
 
-    private EventLoopGroup group = new NioEventLoopGroup();
+    private EventLoopGroup group = new NioEventLoopGroup(2);
     ChannelGroup connections = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     public EventLoopGroup getGroup() {
