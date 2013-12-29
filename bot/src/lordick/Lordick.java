@@ -164,7 +164,7 @@ public class Lordick extends IrcClient {
     private void connectDatabase() {
         try {
             databaseConnection = DriverManager.getConnection("jdbc:sqlite:lordick.db");
-            databaseConnection.createStatement().executeUpdate("create table if not exists keyvalues (server TEXT, key TEXT, value TEXT, unique(server, key, value) on conflict replace)");
+            databaseConnection.createStatement().executeUpdate("create table if not exists keyvalues (server TEXT, key TEXT, value TEXT, unique(server, key) on conflict replace)");
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
