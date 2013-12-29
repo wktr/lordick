@@ -17,6 +17,8 @@ import java.util.List;
 
 public class IrcInitializer extends ChannelInitializer<SocketChannel> {
 
+    private static final int MAX_LENGTH = 300;
+
     private static final StringDecoder STRING_DECODER = new StringDecoder();
     private static final StringEncoder STRING_ENCODER = new StringEncoder();
 
@@ -47,9 +49,10 @@ public class IrcInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast("lineEncoder", new MessageToMessageEncoder<String>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, String message, List<Object> out) throws Exception {
-                if (message.length() > 200) {
-                    message = message.substring(0, 200);
+                if (message.length() > MAX_LENGTH) {
+                    message = message.substring(0, MAX_LENGTH);
                 }
+                // todo: split this and send over multiple lines ?
                 client.onSend(new IrcServer(ctx.channel()), message);
                 out.add(message + "\r\n");
             }
