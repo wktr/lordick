@@ -186,12 +186,12 @@ public class Lordick extends IrcClient {
         return null;
     }
 
-    public void setKeyValue(IrcServer server, String key, String value) {
+    public void setKeyValue(IrcServer server, String key, Object value) {
         try {
             PreparedStatement ps = databaseConnection.prepareStatement("insert into keyvalues (server, key, value) values (?, ?, ?)");
             ps.setString(1, server.getNetworkProperties().getHost());
             ps.setString(2, key);
-            ps.setString(3, value);
+            ps.setString(3, value.toString());
             ps.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
