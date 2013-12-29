@@ -22,30 +22,24 @@ public class Json {
         Matcher json_matcher = json_pattern.matcher(json);
         while (json_matcher.find()) {
             String key = json_matcher.group(1);
+            if (parent != null) {
+                key = parent + "." + key;
+            }
             String obj = json_matcher.group(2);
             //System.out.printf("Matched: '%s' to '%s'\n", key, obj);
             if (obj.startsWith("{")) {
                 parseObject(map, key, obj);
             } else if (obj.startsWith("[")) {
-                String newparent;
-                if (parent == null) {
-                    newparent = key;
-                } else {
-                    newparent = parent + "." + key;
-                }
                 Matcher array_matcher = json_object.matcher(obj.substring(1, obj.length() - 1));
                 int idx = 0;
                 while (array_matcher.find()) {
                     String array_value = array_matcher.group(1);
-                    parseObject(map, newparent + "." + idx, array_value);
+                    parseObject(map, key + "." + idx, array_value);
                     idx++;
                 }
             } else {
                 if (obj.startsWith("\"")) {
                     obj = obj.substring(1, obj.length() - 1);
-                }
-                if (parent != null) {
-                    key = parent + "." + key;
                 }
                 //System.out.printf(" '%s' = '%s'\n", key, obj);
                 map.put(key, obj);
