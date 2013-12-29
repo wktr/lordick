@@ -46,8 +46,7 @@ public class IrcHostmask {
     public boolean equals(Object obj) {
         if (obj == null || !(obj instanceof IrcHostmask)) {
             return false;
-        }
-        else if (super.equals(obj)) {
+        } else if (super.equals(obj)) {
             return true;
         } else {
             return obj.toString().equals(this.toString());
