@@ -2,6 +2,7 @@ package lordick.bot.commands;
 
 import lordick.Lordick;
 import lordick.bot.CommandListener;
+import lordick.bot.InitListener;
 import lordick.util.Json;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
@@ -11,10 +12,31 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Statement;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
-public class Weather implements CommandListener {
+public class Weather implements CommandListener, InitListener {
+
+    private static int TIMEOUT = 10 * 60 * 1000; // length between queries in MS
+
+    @Override
+    public boolean init(final Lordick client) {
+        // delete old weather data every 20 minutes
+        client.getGroup().scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Statement s = client.getDatabaseConnection().createStatement();
+                    s.execute("delete from keyvalues where key like (select 'weather.%.' || substr(key, 19) from keyvalues where key like 'weather.lastquery.%' and value < " + (System.currentTimeMillis() - TIMEOUT) + ")");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 20, TimeUnit.MINUTES);
+        return true;
+    }
 
     private static final String WEATHER_URL = "http://api.openweathermap.org/data/2.5/weather?mode=json&units=metric&q=";
 
@@ -50,13 +72,14 @@ public class Weather implements CommandListener {
             client.setKeyValue(message.getServer(), "weather.lastlocation." + message.getHostmask().getNick(), location);
         }
         long lastquery = getLong(client.getKeyValue(message.getServer(), "weather.lastquery." + location));
-        if (lastquery > 0 && System.currentTimeMillis() - lastquery < 10 * 60 * 1000) { // if last query was less than 10 minutes ago, send last data
+        if (lastquery > 0 && System.currentTimeMillis() - lastquery < TIMEOUT) { // if last query was less than 10 minutes ago, send last data
             String lastdata = client.getKeyValue(message.getServer(), "weather.lastdata." + location);
             if (lastdata != null && !lastdata.isEmpty()) {
                 message.sendChatf("%s: %s", message.getHostmask().getNick(), lastdata);
             } else {
-                long timeout = 10 * 60 - (System.currentTimeMillis() - lastquery) / 1000;
-                message.sendChatf("%s: There was an error last time retrieving the weather for %s, please try again in %d minute(s)", message.getHostmask().getNick(), location, timeout / 60 + 1);
+                long timeout = TIMEOUT - (System.currentTimeMillis() - lastquery);
+                timeout /= 60;
+                message.sendChatf("%s: There was an error last time retrieving the weather for %s, please try again in %d minute(s)", message.getHostmask().getNick(), location, timeout + 1);
             }
         } else {
             String location_encoded;
@@ -66,6 +89,7 @@ public class Weather implements CommandListener {
                 message.sendChatf("%s: Error parsing location, %s", message.getHostmask().getNick(), ex.getMessage());
                 return;
             }
+            client.setKeyValue(message.getServer(), "weather.lastquery." + location, System.currentTimeMillis());
             HttpURLConnection conn;
             int code;
             try {
@@ -79,7 +103,6 @@ public class Weather implements CommandListener {
                 message.sendChatf("%s: Error connecting to weather service, %s", message.getHostmask().getNick(), ex.getMessage());
                 return;
             }
-            client.setKeyValue(message.getServer(), "weather.lastquery." + location, System.currentTimeMillis());
             if (code == 512) {
                 message.sendChatf("%s: Invalid location, %s", message.getHostmask().getNick(), location);
                 return;
@@ -112,8 +135,7 @@ public class Weather implements CommandListener {
                     weather.append(json.get("weather.0.description"));
                     weather.append(", ");
                 }
-                weather.append(String.format(", %s, Temp %sc (min %sc/max %sc), %s%% Humidity, %s hPa, %s%% Cloudy, Wind Speed %sm/s",
-                        json.get("weather.0.description"),
+                weather.append(String.format("Temp %sc (min %sc/max %sc), %s%% Humidity, %s hPa, %s%% Cloudy, Wind Speed %sm/s",
                         json.get("main.temp"),
                         json.get("main.temp_min"),
                         json.get("main.temp_max"),
