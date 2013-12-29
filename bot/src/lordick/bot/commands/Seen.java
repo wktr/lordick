@@ -24,7 +24,7 @@ public class Seen implements CommandListener, MessageListener {
             message.sendChatf(getHelp());
             return;
         }
-        String nick = message.getMessage().toLowerCase();
+        String nick = message.getMessage().toLowerCase().split(" ", 2)[0];
         String lastSeenEvent = client.getKeyValue(message.getServer(), "lastseen.event." + nick);
         if (lastSeenEvent == null) {
             message.sendChatf("Have not seen: %s", nick);
