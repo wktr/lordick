@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +75,7 @@ public class Weather implements CommandListener, InitListener {
         } else {
             String location_encoded;
             try {
-                location_encoded = URLEncoder.encode(location, StandardCharsets.UTF_8.name());
+                location_encoded = URLEncoder.encode(location, "UTF-8");
             } catch (Exception ex) {
                 message.sendChatf("%s: Error parsing location, %s", message.getHostmask().getNick(), ex.getMessage());
                 return;
