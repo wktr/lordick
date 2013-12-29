@@ -103,18 +103,18 @@ public class Lordick extends IrcClient {
         if (!message.hasMessage()) {
             return;
         }
-        // simple spam filtering
-        if (message.isDestChannel() || message.isDestMe()) {
-            if (System.currentTimeMillis() - getKeyValueLong(message.getServer(), "spam." + message.getHostmask().getNick()) < 5000) { // todo: set this 5000 somewhere ?
-                message.setSpam(true);
-            }
-            setKeyValue(message.getServer(), "spam." + message.getHostmask().getNick(), System.currentTimeMillis());
-        }
         UserProperties up = message.getServer().getUserProperties();
         if ((message.isDestChannel() && message.getMessage().matches("^" + up.getNickname() + "[:,]? .+")) || message.isDestMe()) {
             String text = message.getMessage().substring(message.getMessage().indexOf(' ') + 1);
             Matcher m = command.matcher(text);
             if (m.matches()) {
+                // simple spam filtering
+                if (message.isDestChannel() || message.isDestMe()) {
+                    if (System.currentTimeMillis() - getKeyValueLong(message.getServer(), "spam." + message.getHostmask().getNick()) < 5000) { // todo: set this 5000 somewhere ?
+                        message.setSpam(true);
+                    }
+                    setKeyValue(message.getServer(), "spam." + message.getHostmask().getNick(), System.currentTimeMillis());
+                }
                 String command = m.group(1);
                 message.setMessage(m.group(2));
                 if (commandListeners.containsKey(command)) {
