@@ -72,6 +72,7 @@ public class Karma implements CommandListener, MessageListener, InitListener {
             message.sendChatf("pls give something for %s", command);
             return;
         }
+        nick = nick.split(" ", 2)[0];
         try {
             PreparedStatement ps = connection.prepareStatement("select score from karma where name == ?");
             ps.setString(1, nick);
