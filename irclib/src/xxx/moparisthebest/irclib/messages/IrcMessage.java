@@ -8,6 +8,7 @@ public class IrcMessage {
     private String message;
     private final IrcServer server;
     private IrcHostmask hostmask;
+    private boolean spam = false;
 
     public IrcMessage(String raw, String source, String command, String target, String message, IrcServer server) {
         this.raw = raw;
@@ -87,5 +88,13 @@ public class IrcMessage {
 
     public void sendChat(String message) {
         server.getChannel().writeAndFlush("PRIVMSG " + getSendDest() + " :" + message);
+    }
+
+    public boolean isSpam() {
+        return spam;
+    }
+
+    public void setSpam(boolean spam) {
+        this.spam = spam;
     }
 }

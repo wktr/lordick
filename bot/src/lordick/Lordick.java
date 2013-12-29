@@ -103,6 +103,10 @@ public class Lordick extends IrcClient {
         if (!message.hasMessage()) {
             return;
         }
+        if (System.currentTimeMillis() - getKeyValueLong(message.getServer(), "lastmessage." + message.getHostmask().getNick()) < 5000) { // todo: set this 5000 somewhere ?
+            message.setSpam(true);
+        }
+        setKeyValue(message.getServer(), "lastmessagetime." + message.getHostmask().getNick(), System.currentTimeMillis());
         UserProperties up = message.getServer().getUserProperties();
         if (message.getMessage().matches("^" + up.getNickname() + "[:,]? .+") || message.isDestMe()) {
             String text = message.getMessage().substring(message.getMessage().indexOf(' ') + 1);
@@ -168,6 +172,14 @@ public class Lordick extends IrcClient {
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
+        }
+    }
+
+    public long getKeyValueLong(IrcServer server, String key) {
+        try {
+            return Long.valueOf(getKeyValue(server, key));
+        } catch (Exception e) {
+            return -1;
         }
     }
 
