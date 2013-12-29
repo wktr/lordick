@@ -50,14 +50,6 @@ public class Weather implements CommandListener, InitListener {
         return "weather";
     }
 
-    private long getLong(String s) {
-        try {
-            return Long.valueOf(s);
-        } catch (Exception ignored) {
-            return -1;
-        }
-    }
-
     @Override
     public void handleCommand(Lordick client, String command, IrcMessage message) {
         String location;
@@ -71,7 +63,7 @@ public class Weather implements CommandListener, InitListener {
             location = message.getMessage();
             client.setKeyValue(message.getServer(), "weather.lastlocation." + message.getHostmask().getNick(), location);
         }
-        long lastquery = getLong(client.getKeyValue(message.getServer(), "weather.lastquery." + location));
+        long lastquery = client.getKeyValueLong(message.getServer(), "weather.lastquery." + location);
         if (lastquery > 0 && System.currentTimeMillis() - lastquery < TIMEOUT) { // if last query was less than 10 minutes ago, send last data
             String lastdata = client.getKeyValue(message.getServer(), "weather.lastdata." + location);
             if (lastdata != null && !lastdata.isEmpty()) {
