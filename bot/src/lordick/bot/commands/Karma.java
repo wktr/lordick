@@ -57,6 +57,9 @@ public class Karma implements CommandListener, MessageListener, InitListener {
 
     @Override
     public void handleCommand(Lordick client, String command, IrcMessage message) {
+        if (message.isSpam()) {
+            return;
+        }
         if (!message.hasMessage()) {
             message.sendChatf(getHelp());
             return;
@@ -98,9 +101,12 @@ public class Karma implements CommandListener, MessageListener, InitListener {
 
     @Override
     public void onMessage(Lordick client, IrcMessage message) {
+        if (message.isSpam()) {
+            return;
+        }
         if (message.isDestChannel() && message.getMessage().contains("++")) {
             Matcher m = karma.matcher(message.getMessage());
-            while (m.find()) {
+            if (m.find()) {
                 try {
                     String nick = m.group(1).toLowerCase();
                     PreparedStatement ps = connection.prepareStatement("insert or replace into karma (name, score) values (?, ifnull((select score + 1 from karma where name = ?), 1))");

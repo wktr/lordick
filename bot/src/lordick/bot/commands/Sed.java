@@ -2,20 +2,19 @@ package lordick.bot.commands;
 
 import lordick.Lordick;
 import lordick.bot.CommandListener;
+import lordick.bot.InitListener;
 import lordick.bot.MessageListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @SuppressWarnings("unused")
-public class Sed implements CommandListener, MessageListener {
+public class Sed implements CommandListener, MessageListener, InitListener {
 
     private static Pattern SED_REGEX = Pattern.compile("^s([/|,!])(.*?)\\1(.*?)\\1(g?)");
-
-    private Map<String, String> lastMessage = new ConcurrentHashMap<String, String>();
 
     @Override
     public void handleCommand(Lordick client, String command, IrcMessage message) {
@@ -39,22 +38,42 @@ public class Sed implements CommandListener, MessageListener {
         }
         Matcher m = SED_REGEX.matcher(message.getMessage());
         if (m.find()) {
-            if (!lastMessage.containsKey(message.getSource())) {
+            if (message.isSpam()) {
                 return;
             }
-            String last = lastMessage.get(message.getSource());
+            String lastmessage = client.getKeyValue(message.getServer(), "lastmessage." + message.getHostmask().getNick());
+            if (lastmessage == null || lastmessage.isEmpty()) {
+                return;
+            }
             String reply;
             if (m.group(4) == null || m.group(4).equals("")) {
-                reply = last.replaceFirst(m.group(2), m.group(3));
+                reply = lastmessage.replaceFirst(m.group(2), m.group(3));
             } else if (m.group(4) != null && m.group(4).equals("g")) {
-                reply = last.replaceAll(m.group(2), m.group(3));
+                reply = lastmessage.replaceAll(m.group(2), m.group(3));
             } else {
                 message.sendChatf("%s: You did something wrong... %s", message.getHostmask().getNick(), getHelp());
                 return;
             }
             message.sendChatf("%s meant: %s", message.getHostmask().getNick(), reply);
         } else {
-            lastMessage.put(message.getSource(), message.getMessage());
+            client.setKeyValue(message.getServer(), "lastmessage." + message.getHostmask().getNick(), message.getMessage());
         }
+    }
+
+    @Override
+    public boolean init(final Lordick client) {
+        // delete old sed data every 60 minutes
+        client.getGroup().scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Statement s = client.getDatabaseConnection().createStatement();
+                    s.execute("delete from keyvalues where key like 'lastmessage.%'");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 60, TimeUnit.MINUTES);
+        return true;
     }
 }

@@ -5,14 +5,8 @@ import lordick.bot.CommandListener;
 import lordick.bot.MessageListener;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 @SuppressWarnings("unused")
 public class Seen implements CommandListener, MessageListener {
-
-    private Map<String, String> lastSeenEvent = new ConcurrentHashMap<String, String>();
-    private Map<String, Long> lastSeenTime = new ConcurrentHashMap<String, Long>();
 
     @Override
     public String getHelp() {
@@ -31,39 +25,36 @@ public class Seen implements CommandListener, MessageListener {
             return;
         }
         String nick = message.getMessage().toLowerCase();
-        if (!lastSeenEvent.containsKey(nick)) {
+        String lastSeenEvent = client.getKeyValue(message.getServer(), "lastseen.event." + nick);
+        if (lastSeenEvent == null) {
             message.sendChatf("Have not seen: %s", nick);
         } else {
-            message.sendChatf("Last seen %s: %s, %s", nick, getReadable(lastSeenTime.get(nick)), lastSeenEvent.get(nick));
+            message.sendChatf("Last seen %s: %s ago, %s", nick, getReadable(client.getKeyValueLong(message.getServer(), "lastseen.time." + nick), System.currentTimeMillis()), lastSeenEvent);
         }
-    }
-
-    private String notnullpls(String s) {
-        return s == null ? "" : s;
     }
 
     @Override
     public void onMessage(Lordick client, IrcMessage message) {
+        String lastSeenEvent = null;
         if (message.getCommand().equals("PRIVMSG")) {
-            newSeen(message.getHostmask().getNick(), "saying: " + notnullpls(message.getMessage()));
+            lastSeenEvent = "saying: " + message.getMessage();
         } else if (message.getCommand().equals("JOIN")) {
-            newSeen(message.getHostmask().getNick(), "joining " + notnullpls(message.getMessage()));
+            lastSeenEvent = "joining " + message.getMessage();
         } else if (message.getCommand().equals("PART")) {
-            newSeen(message.getHostmask().getNick(), "leaving " + message.getTargetParams() + ": " + notnullpls(message.getMessage()));
+            lastSeenEvent = "leaving " + message.getTargetParams() + ": " + message.getMessage();
         } else if (message.getCommand().equals("QUIT")) {
-            newSeen(message.getHostmask().getNick(), "quitting: " + notnullpls(message.getMessage()));
+            lastSeenEvent = "quitting: " + message.getMessage();
         } else if (message.getCommand().equals("NICK")) {
-            newSeen(message.getHostmask().getNick(), "changing nick to: " + message.getTargetParams());
+            lastSeenEvent = "changing nick to: " + message.getTargetParams();
+        }
+        if (lastSeenEvent != null) {
+            String nick = message.getHostmask().getNick().toLowerCase();
+            client.setKeyValue(message.getServer(), "lastseen.time." + nick, System.currentTimeMillis());
+            client.setKeyValue(message.getServer(), "lastseen.event." + nick, lastSeenEvent);
         }
     }
 
-    private void newSeen(String nick, String message) {
-        String n = nick.toLowerCase();
-        lastSeenEvent.put(n, message);
-        lastSeenTime.put(n, System.currentTimeMillis());
-    }
-
-    private void dostuff(StringBuilder sb, long n, String s) {
+    private static void dostuff(StringBuilder sb, long n, String s) {
         if (n > 0) {
             sb.append(n);
             sb.append(' ');
@@ -75,8 +66,8 @@ public class Seen implements CommandListener, MessageListener {
         }
     }
 
-    private String getReadable(long from) {
-        long diffInSeconds = (System.currentTimeMillis() - from) / 1000;
+    public static String getReadable(long from, long to) {
+        long diffInSeconds = (to - from) / 1000;
         if (diffInSeconds < 10) {
             return "just now";
         }
@@ -91,7 +82,6 @@ public class Seen implements CommandListener, MessageListener {
         dostuff(result, hours, "hour");
         dostuff(result, minutse, "minute");
         dostuff(result, seconds, "second");
-        result.append("ago");
-        return result.toString();
+        return result.toString().trim();
     }
 }

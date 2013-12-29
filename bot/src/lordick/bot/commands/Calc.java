@@ -21,6 +21,9 @@ public class Calc implements CommandListener {
 
     @Override
     public void handleCommand(Lordick client, String command, IrcMessage message) {
+        if (message.isSpam()) {
+            return;
+        }
         try {
             Expression expression = new Expression(message.getMessage());
             BigDecimal result = expression.eval();

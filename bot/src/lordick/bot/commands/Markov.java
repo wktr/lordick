@@ -76,6 +76,9 @@ public class Markov implements CommandListener, MessageListener, InitListener {
 
     @Override
     public void handleCommand(Lordick client, String command, IrcMessage message) {
+        if (message.isSpam()) {
+            return;
+        }
         if (!message.hasMessage()) {
             message.sendChatf(getHelp());
             return;

@@ -22,7 +22,11 @@ public class IrcMessage {
         } else {
             this.target = this.targetParams = null;
         }
-        this.message = message;
+        if (message == null) {
+            this.message = "";
+        } else {
+            this.message = message;
+        }
         this.server = server;
     }
 

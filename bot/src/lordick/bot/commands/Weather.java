@@ -90,7 +90,6 @@ public class Weather implements CommandListener, InitListener {
                 conn.setRequestMethod("GET");
                 conn.connect();
                 code = conn.getResponseCode();
-                System.out.println("CODE: " + code);
             } catch (Exception ex) {
                 message.sendChatf("%s: Error connecting to weather service, %s", message.getHostmask().getNick(), ex.getMessage());
                 return;
@@ -123,8 +122,14 @@ public class Weather implements CommandListener, InitListener {
                 message.sendChatf("%s: Error getting weather data for, %s", message.getHostmask().getNick(), json.get("message"));
             } else {
                 StringBuilder weather = new StringBuilder(String.format("Weather for %s %s, ", json.get("name"), json.get("sys.country")));
-                if (json.containsKey("weather.0.description")) {
-                    weather.append(json.get("weather.0.description"));
+                String description = null;
+                for (int i = 0; i < 10; i++) {
+                    if (json.containsKey("weather." + i + ".description")) {
+                        description = json.get("weather." + i + ".description");
+                    }
+                }
+                if (description != null) {
+                    weather.append(description);
                     weather.append(", ");
                 }
                 weather.append(String.format("Temp %sc (min %sc/max %sc), %s%% Humidity, %s hPa, %s%% Cloudy, Wind Speed %sm/s",
@@ -138,11 +143,17 @@ public class Weather implements CommandListener, InitListener {
                 if (json.containsKey("wind.gust")) {
                     weather.append(String.format(" (gusting %sm/s)", json.get("wind.gust")));
                 }
-                if (json.containsKey("rain.3h")) {
-                    weather.append(String.format(", Rain %smm/3h", json.get("rain.3h")));
+                for (String key : json.keySet()) {
+                    if (key.startsWith("rain.")) {
+                        weather.append(String.format(", Rain %smm/" + key.substring(5), json.get(key)));
+                        break;
+                    }
                 }
-                if (json.containsKey("snow.3h")) {
-                    weather.append(String.format(", Snow %smm/3h", json.get("snow.3h")));
+                for (String key : json.keySet()) {
+                    if (key.startsWith("snow.")) {
+                        weather.append(String.format(", Snow %smm/" + key.substring(5), json.get(key)));
+                        break;
+                    }
                 }
                 String formatted = weather.toString();
                 client.setKeyValue(message.getServer(), "weather.lastdata." + location, formatted);

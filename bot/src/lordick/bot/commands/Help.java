@@ -19,6 +19,10 @@ public class Help implements UnhandledCommandListener, CommandListener {
 
     @Override
     public void handleCommand(Lordick client, String command, IrcMessage message) {
+        if (message.isSpam()) {
+            message.sendChatf("ur mental %s", message.getHostmask().getNick());
+            return;
+        }
         if (!message.hasMessage()) {
             StringBuilder commandList = new StringBuilder();
             for (String s : client.getCommandListeners().keySet()) {
