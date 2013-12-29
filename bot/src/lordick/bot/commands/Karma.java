@@ -101,9 +101,6 @@ public class Karma implements CommandListener, MessageListener, InitListener {
 
     @Override
     public void onMessage(Lordick client, IrcMessage message) {
-        if (message.isSpam()) {
-            return;
-        }
         if (message.isDestChannel() && message.getMessage().contains("++")) {
             Matcher m = karma.matcher(message.getMessage());
             if (m.find()) {
