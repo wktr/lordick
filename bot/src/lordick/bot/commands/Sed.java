@@ -16,6 +16,8 @@ public class Sed implements CommandListener, MessageListener, InitListener {
 
     private static Pattern SED_REGEX = Pattern.compile("^s([/|,!])(.*?)\\1(.*?)\\1(g?)");
 
+    private static String LASTMESSAGE_PREFIX = "sed.lastmessage.";
+
     @Override
     public void handleCommand(Lordick client, String command, IrcMessage message) {
         message.sendChat(getHelp());
@@ -41,7 +43,7 @@ public class Sed implements CommandListener, MessageListener, InitListener {
             if (message.isSpam()) {
                 return;
             }
-            String lastmessage = client.getKeyValue(message.getServer(), "lastmessage." + message.getHostmask().getNick());
+            String lastmessage = client.getKeyValue(message.getServer(), LASTMESSAGE_PREFIX + message.getHostmask().getNick());
             if (lastmessage == null || lastmessage.isEmpty()) {
                 return;
             }
@@ -56,7 +58,7 @@ public class Sed implements CommandListener, MessageListener, InitListener {
             }
             message.sendChatf("%s meant: %s", message.getHostmask().getNick(), reply);
         } else {
-            client.setKeyValue(message.getServer(), "lastmessage." + message.getHostmask().getNick(), message.getMessage());
+            client.setKeyValue(message.getServer(), LASTMESSAGE_PREFIX + message.getHostmask().getNick(), message.getMessage());
         }
     }
 
@@ -68,7 +70,7 @@ public class Sed implements CommandListener, MessageListener, InitListener {
             public void run() {
                 try {
                     Statement s = client.getDatabaseConnection().createStatement();
-                    s.execute("delete from keyvalues where key like 'lastmessage.%'");
+                    s.execute("delete from keyvalues where key like '" + LASTMESSAGE_PREFIX + "%'");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
