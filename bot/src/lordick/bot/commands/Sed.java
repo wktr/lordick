@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 @SuppressWarnings("unused")
 public class Sed implements CommandListener, MessageListener, InitListener {
 
-    private static Pattern SED_REGEX = Pattern.compile("^s([/|,!])(.*?)\\1(.*?)\\1(g?)");
+    private static Pattern SED_REGEX = Pattern.compile("^s/(.*?)/(.*?)/(g?)");
 
     private static String LASTMESSAGE_PREFIX = "sed.lastmessage.";
 
@@ -40,18 +40,16 @@ public class Sed implements CommandListener, MessageListener, InitListener {
         }
         Matcher m = SED_REGEX.matcher(message.getMessage());
         if (m.find()) {
-            if (message.isSpam()) {
-                return;
-            }
             String lastmessage = client.getKeyValue(message.getServer(), LASTMESSAGE_PREFIX + message.getHostmask().getNick());
             if (lastmessage == null || lastmessage.isEmpty()) {
+                message.sendChatf("%s: No last message on record", message.getHostmask().getNick());
                 return;
             }
             String reply;
-            if (m.group(4) == null || m.group(4).equals("")) {
-                reply = lastmessage.replaceFirst(m.group(2), m.group(3));
-            } else if (m.group(4) != null && m.group(4).equals("g")) {
-                reply = lastmessage.replaceAll(m.group(2), m.group(3));
+            if (m.group(3) == null || m.group(3).isEmpty()) {
+                reply = lastmessage.replaceFirst(m.group(1), m.group(2));
+            } else if (m.group(3) != null && m.group(3).equals("g")) {
+                reply = lastmessage.replaceAll(m.group(1), m.group(2));
             } else {
                 message.sendChatf("%s: You did something wrong... %s", message.getHostmask().getNick(), getHelp());
                 return;
