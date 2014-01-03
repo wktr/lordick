@@ -17,7 +17,7 @@ import java.util.List;
 
 public class IrcInitializer extends ChannelInitializer<SocketChannel> {
 
-    private static final int MAX_LENGTH = 300;
+    private static final int MAX_LENGTH = 500;
 
     private static final StringDecoder STRING_DECODER = new StringDecoder();
     private static final StringEncoder STRING_ENCODER = new StringEncoder();
