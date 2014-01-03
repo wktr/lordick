@@ -18,6 +18,18 @@ import xxx.moparisthebest.irclib.properties.UserProperties;
 
 public class IrcClient {
 
+    public static String replaceColourCodes(String s) {
+        return s.replaceAll("\u0002", "^B") // bold
+                .replaceAll("\u000F", "^N") // normal
+                .replaceAll("\u0011", "^F") // fixed
+                .replaceAll("\u0012", "^R") // reverse
+                .replaceAll("\u0016", "^N") // invers
+                .replaceAll("\u001D", "^I") // italis
+                .replaceAll("\u001F", "^U") // underline
+                .replaceAll("\u0003", "^C") // colour 1
+                .replaceAll("\u0004", "^K"); // colour 2
+    }
+
     private EventLoopGroup group = new NioEventLoopGroup(2);
     ChannelGroup connections = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
@@ -51,11 +63,11 @@ public class IrcClient {
     }
 
     public void onSend(IrcServer server, String message) {
-        System.out.println("onSend(): " + server + " - " + message);
+        System.out.println("onSend(): " + server + " - " + replaceColourCodes(message));
     }
 
     public void onMessage(IrcMessage message) {
-        System.out.println("onMessage(): " + message.getServer() + " - " + message.getRaw());
+        System.out.println("onMessage(): " + message.getServer() + " - " + replaceColourCodes(message.getRaw()));
     }
 
     public void onDisconnect(IrcServer server) {
