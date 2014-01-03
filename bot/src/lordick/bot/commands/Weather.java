@@ -1,9 +1,10 @@
 package lordick.bot.commands;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lordick.Lordick;
 import lordick.bot.CommandListener;
 import lordick.bot.InitListener;
-import lordick.util.Json;
 import xxx.moparisthebest.irclib.messages.IrcMessage;
 
 import java.io.BufferedReader;
@@ -12,6 +13,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.sql.Statement;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +35,7 @@ public class Weather implements CommandListener, InitListener {
                     e.printStackTrace();
                 }
             }
-        }, 0, 20, TimeUnit.MINUTES);
+        }, 0, TIMEOUT * 2, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -115,44 +117,47 @@ public class Weather implements CommandListener, InitListener {
             } catch (Exception ignored) {
             }
             System.out.println("resp: " + sb.toString());
-            Map<String, String> json = Json.parse(sb.toString());
+            JsonNode json;
+            try {
+                json = new ObjectMapper().readTree(sb.toString());
+            } catch (Exception e) {
+                message.sendChatf("%s: Error parsing weather data for, %s", message.getHostmask().getNick(), e.getMessage());
+                return;
+            }
             client.setKeyValue(message.getServer(), "weather.lastquery." + location, System.currentTimeMillis());
-            if (json.containsKey("message")) {
-                message.sendChatf("%s: Error getting weather data for, %s", message.getHostmask().getNick(), json.get("message"));
+            if (!json.path("message").isMissingNode()) {
+                message.sendChatf("%s: Error getting weather data for, %s", message.getHostmask().getNick(), json.get("message").textValue());
             } else {
-                StringBuilder weather = new StringBuilder(String.format("Weather for %s %s, ", json.get("name"), json.get("sys.country")));
-                String description = null;
-                for (int i = 0; i < 10; i++) {
-                    if (json.containsKey("weather." + i + ".description")) {
-                        description = json.get("weather." + i + ".description");
-                    }
-                }
-                if (description != null) {
+                StringBuilder weather = new StringBuilder(String.format("Weather for %s %s, ", json.get("name").asText(), json.get("sys").path("country").asText()));
+                String description = json.path("weather").path(0).path("description").textValue();
+                if (description != null && !description.isEmpty()) {
                     weather.append(description);
                     weather.append(", ");
                 }
                 weather.append(String.format("Temp %sc (min %sc/max %sc), %s%% Humidity, %s hPa, %s%% Cloudy, Wind Speed %sm/s",
-                        json.get("main.temp"),
-                        json.get("main.temp_min"),
-                        json.get("main.temp_max"),
-                        json.get("main.humidity"),
-                        json.get("main.pressure"),
-                        json.get("clouds.all"),
-                        json.get("wind.speed")));
-                if (json.containsKey("wind.gust")) {
-                    weather.append(String.format(" (gusting %sm/s)", json.get("wind.gust")));
+                        json.get("main").get("temp").asText(),
+                        json.get("main").get("temp_min").asText(),
+                        json.get("main").get("temp_max").asText(),
+                        json.get("main").get("humidity").asText(),
+                        json.get("main").get("pressure").asText(),
+                        json.get("clouds").get("all").asText(),
+                        json.get("wind").get("speed").asText()));
+                JsonNode windGust = json.path("wind").path("gust");
+                if (!windGust.isMissingNode()) {
+                    weather.append(String.format(" (gusting %sm/s)", windGust.asText()));
                 }
-                for (String key : json.keySet()) {
-                    if (key.startsWith("rain.")) {
-                        weather.append(String.format(", Rain %smm/" + key.substring(5), json.get(key)));
-                        break;
-                    }
+
+                Iterator<Map.Entry<String, JsonNode>> it = json.path("rain").fields();
+                while (it.hasNext()) {
+                    Map.Entry<String, JsonNode> item = it.next();
+                    weather.append(", Rain ").append(item.getValue().asText()).append("mm/").append(item.getKey());
+                    break;
                 }
-                for (String key : json.keySet()) {
-                    if (key.startsWith("snow.")) {
-                        weather.append(String.format(", Snow %smm/" + key.substring(5), json.get(key)));
-                        break;
-                    }
+                it = json.path("snow").fields();
+                while (it.hasNext()) {
+                    Map.Entry<String, JsonNode> item = it.next();
+                    weather.append(", Snow ").append(item.getValue().asText()).append("mm/").append(item.getKey());
+                    break;
                 }
                 String formatted = weather.toString();
                 client.setKeyValue(message.getServer(), "weather.lastdata." + location, formatted);
