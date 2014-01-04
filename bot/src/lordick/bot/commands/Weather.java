@@ -70,9 +70,8 @@ public class Weather implements CommandListener, InitListener {
             if (lastdata != null && !lastdata.isEmpty()) {
                 message.sendChatf("%s: %s", message.getHostmask().getNick(), lastdata);
             } else {
-                long timeout = TIMEOUT - (System.currentTimeMillis() - lastquery);
-                timeout /= 60;
-                message.sendChatf("%s: There was an error last time retrieving the weather for %s, please try again in %d minute(s)", message.getHostmask().getNick(), location, timeout + 1);
+                message.sendChatf("%s: There was an error last time retrieving the weather for %s, please try again in %d minute(s)", message.getHostmask().getNick(), location,
+                        TimeUnit.MILLISECONDS.toMinutes(TIMEOUT - (System.currentTimeMillis() - lastquery)));
             }
         } else {
             String location_encoded;
