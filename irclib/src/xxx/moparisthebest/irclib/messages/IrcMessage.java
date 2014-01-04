@@ -25,7 +25,7 @@ public class IrcMessage {
         if (message == null) {
             this.message = "";
         } else {
-            this.message = message;
+            this.message = message.trim();
         }
         this.server = server;
     }
@@ -55,11 +55,7 @@ public class IrcMessage {
     }
 
     public boolean hasMessage() {
-        return message != null; // && !message.isEmpty();
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
+        return message != null && !message.isEmpty();
     }
 
     public IrcServer getServer() {

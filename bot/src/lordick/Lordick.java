@@ -117,6 +117,7 @@ public class Lordick extends IrcClient {
                 }
                 String command = m.group(1);
                 IrcMessage newMessage = new IrcMessage(message.getRaw(), message.getSource(), message.getCommand(), message.getTarget(), m.group(2), message.getServer());
+                newMessage.setSpam(message.isSpam());
                 if (commandListeners.containsKey(command)) {
                     try {
                         commandListeners.get(command).handleCommand(this, command, newMessage);

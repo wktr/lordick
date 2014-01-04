@@ -65,7 +65,6 @@ public class Urban implements CommandListener, InitListener {
             return;
         }
         String term = message.getMessage();
-
         long lastquery = client.getKeyValueLong(message.getServer(), LASTQUERY_PREFIX + term);
         if (lastquery > 0 && System.currentTimeMillis() - lastquery < TIMEOUT) { // if last query was less than 10 minutes ago, send last data
             String lastdata = client.getKeyValue(message.getServer(), LASTRESULT_PREFIX + term);
