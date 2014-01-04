@@ -116,10 +116,10 @@ public class Lordick extends IrcClient {
                     setKeyValue(message.getServer(), "spam." + message.getHostmask().getNick(), System.currentTimeMillis());
                 }
                 String command = m.group(1);
-                message.setMessage(m.group(2));
+                IrcMessage newMessage = new IrcMessage(message.getRaw(), message.getSource(), message.getCommand(), message.getTarget(), m.group(2), message.getServer());
                 if (commandListeners.containsKey(command)) {
                     try {
-                        commandListeners.get(command).handleCommand(this, command, message);
+                        commandListeners.get(command).handleCommand(this, command, newMessage);
                     } catch (Exception ex) {
                         message.sendChatf("Exception while handling command %s, %s", command, ex.getMessage());
                         ex.printStackTrace();
@@ -127,7 +127,7 @@ public class Lordick extends IrcClient {
                     return;
                 } else {
                     for (UnhandledCommandListener listener : unhandledCommandListeners) {
-                        listener.unhandledCommand(this, command, message);
+                        listener.unhandledCommand(this, command, newMessage);
                     }
                 }
             }
