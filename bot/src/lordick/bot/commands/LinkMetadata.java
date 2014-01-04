@@ -31,7 +31,6 @@ public class LinkMetadata implements MessageListener, InitListener {
 
     @Override
     public boolean init(final Lordick client) {
-        // delete old weather data every 20 minutes
         client.getGroup().scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -113,7 +112,7 @@ public class LinkMetadata implements MessageListener, InitListener {
     private static Pattern imgur_uploaded = Pattern.compile("<span id=\"nicetime\" title=\".+?\">(.+)</span>");
     private static Pattern imgur_views = Pattern.compile("<span id=\"views\">(.+)</span>");
     private static Pattern imgur_bandwidth = Pattern.compile("<span id=\"bandwidth\">(.+)</span>");
-    private static Pattern imgur_nsfw = Pattern.compile("\"nsfw\":(true|false)");
+    private static Pattern imgur_nsfw = Pattern.compile("\"nsfw\":(true)");
 
     private static String downloadString(InputStream is) throws Exception {
         StringBuilder htmlBuilder = new StringBuilder();
@@ -192,16 +191,27 @@ public class LinkMetadata implements MessageListener, InitListener {
             }
         } else if (contentType.startsWith("image/") && url.matches(imgur_direct.pattern())) {
             URL newurl = new URL("http://imgur.com/" + getRegex(url, imgur_direct));
-            result.append("[IMGUR] Size: ").append(humanReadableByteCount(conn.getContentLengthLong(), false)).append(", ");
+            result.append("[IMGUR] ");
+            long size = conn.getContentLengthLong();
+            if (size > 0) {
+                result.append("Size: ").append(humanReadableByteCount(size, false)).append(", ");
+            }
+            result.append("Type: ").append(contentType).append(", ");
             getMetaData(newurl, result);
         } else if (contentType.startsWith("image/")) {
             BufferedImage bimg = ImageIO.read(conn.getInputStream());
             result.append("[IMAGE] Type: ").append(contentType)
-                    .append(", Size: ").append(humanReadableByteCount(conn.getContentLengthLong(), false))
                     .append(", Dimensions: ").append(bimg.getWidth()).append("x").append(bimg.getHeight());
+            long size = conn.getContentLengthLong();
+            if (size > 0) {
+                result.append(", Size: ").append(humanReadableByteCount(size, false));
+            }
         } else {
-            result.append("[URL] Type: ").append(conn.getContentType())
-                    .append(", Size: ").append(humanReadableByteCount(conn.getContentLengthLong(), false));
+            result.append("[URL] Type: ").append(conn.getContentType());
+            long size = conn.getContentLengthLong();
+            if (size > 0) {
+                result.append(", Size: ").append(humanReadableByteCount(size, false));
+            }
         }
         latch.await(2, TimeUnit.SECONDS);
         if (reddit.length() > 0) {
