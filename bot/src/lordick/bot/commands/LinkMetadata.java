@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.sql.Statement;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +32,7 @@ public class LinkMetadata implements MessageListener, InitListener {
 
     @Override
     public boolean init(final Lordick client) {
+        System.setProperty("http.agent", "");
         client.getGroup().scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -79,14 +81,18 @@ public class LinkMetadata implements MessageListener, InitListener {
         @Override
         public void run() {
             try {
-                JsonNode root = new ObjectMapper().readTree(downloadString(new URL("http://www.reddit.com/api/info.json?url=" + url).openStream()));
+                JsonNode root = new ObjectMapper().readTree(downloadString(new URL("http://www.reddit.com/api/info.json?url=" + URLEncoder.encode(url, "UTF-8")).openStream()));
                 JsonNode node = root.path("data").path("children").path(0).path("data");
                 if (!node.isMissingNode()) {
-                    sb.append("[REDDIT] ");
-                    appendSB(sb, "Posted: ", Duration.getReadableDuration(node.get("created_utc").longValue() * 1000, System.currentTimeMillis()));
-                    appendSB(sb, ", Title: ", node.get("title").textValue());
-                    if (node.get("over_18").booleanValue()) {
-                        sb.append(" !!!NSFW!!!");
+                    long created_utc = node.get("created_utc").longValue() * 1000;
+                    long duration = System.currentTimeMillis() - created_utc;
+                    if (TimeUnit.MILLISECONDS.toDays(duration) < 7) { // only post it if it's recent
+                        sb.append("[REDDIT] ");
+                        appendSB(sb, "Posted: ", Duration.getReadableDuration(duration));
+                        appendSB(sb, ", Title: ", node.get("title").textValue());
+                        if (node.get("over_18").booleanValue()) {
+                            sb.append(" !!!NSFW!!!");
+                        }
                     }
                 }
             } catch (Exception ex) {
@@ -126,10 +132,27 @@ public class LinkMetadata implements MessageListener, InitListener {
         return htmlBuilder.toString();
     }
 
-    private static void getMetaData(URL url, StringBuilder result) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        parseConnection(result, conn);
-        conn.disconnect();
+    private static void getMetaData(URL url, StringBuilder result) {
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
+            if (url.getHost().startsWith("mopar") || url.getHost().startsWith("www.mopar")) {
+                conn.setRequestProperty("Cookie", "mpr_agree4=yes");
+            }
+            parseConnection(result, conn);
+        } catch (Exception e) {
+            result.append("Error getting url data: ").append(e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.getInputStream().close();
+                } catch (Exception ignored) {
+                } finally {
+                    conn.disconnect();
+                }
+            }
+        }
     }
 
     private static void appendSB(StringBuilder sb, String s1, Object o) {
@@ -142,6 +165,20 @@ public class LinkMetadata implements MessageListener, InitListener {
     }
 
     private static void parseConnection(StringBuilder result, HttpURLConnection conn) throws Exception {
+        int code = conn.getResponseCode();
+        if (code == 302) {
+            String location = conn.getHeaderField("Location");
+            result.append("[SITE] Http 302 moved: ");
+            if (location == null) {
+                result.append("with location field");
+            } else {
+                result.append(location);
+            }
+            return;
+        } else if (code >= 400) {
+            result.append("[SITE] Error: ").append(conn.getResponseMessage());
+            return;
+        }
         final CountDownLatch latch = new CountDownLatch(1);
         final String url = conn.getURL().toExternalForm();
         final StringBuilder reddit = new StringBuilder();
@@ -167,7 +204,6 @@ public class LinkMetadata implements MessageListener, InitListener {
                 appendSB(result, ", Likes: ", getRegex(html, youtube_likes));
                 appendSB(result, ", Dislikes: ", getRegex(html, youtube_dislikes));
             } else if (host.equalsIgnoreCase("imgur.com") && html.contains("\"twitter:image:width\"")) {
-                ;
                 String width = getRegex(html, imgur_width);
                 String height = getRegex(html, imgur_height);
                 if (width == null || height == null) {
@@ -192,7 +228,7 @@ public class LinkMetadata implements MessageListener, InitListener {
         } else if (contentType.startsWith("image/") && url.matches(imgur_direct.pattern())) {
             URL newurl = new URL("http://imgur.com/" + getRegex(url, imgur_direct));
             result.append("[IMGUR] ");
-            long size = conn.getContentLengthLong();
+            long size = conn.getContentLength();
             if (size > 0) {
                 result.append("Size: ").append(humanReadableByteCount(size, false)).append(", ");
             }
@@ -202,13 +238,13 @@ public class LinkMetadata implements MessageListener, InitListener {
             BufferedImage bimg = ImageIO.read(conn.getInputStream());
             result.append("[IMAGE] Type: ").append(contentType)
                     .append(", Dimensions: ").append(bimg.getWidth()).append("x").append(bimg.getHeight());
-            long size = conn.getContentLengthLong();
+            long size = conn.getContentLength();
             if (size > 0) {
                 result.append(", Size: ").append(humanReadableByteCount(size, false));
             }
         } else {
             result.append("[URL] Type: ").append(conn.getContentType());
-            long size = conn.getContentLengthLong();
+            long size = conn.getContentLength();
             if (size > 0) {
                 result.append(", Size: ").append(humanReadableByteCount(size, false));
             }
@@ -241,12 +277,7 @@ public class LinkMetadata implements MessageListener, InitListener {
                     message.sendChat(lastResult);
                 } else {
                     StringBuilder result = new StringBuilder();
-                    try {
-                        getMetaData(url, result);
-                    } catch (Exception e) {
-                        appendSB(result, "Error fetching url result: ", e.getMessage());
-                        e.printStackTrace();
-                    }
+                    getMetaData(url, result);
                     if (result.length() > 0) {
                         message.sendChat(result.toString());
                         client.setKeyValue(message.getServer(), LASTRESULT_PREFIX + url.toExternalForm(), result);
@@ -258,6 +289,7 @@ public class LinkMetadata implements MessageListener, InitListener {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            break;
         }
     }
 }
