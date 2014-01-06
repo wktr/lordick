@@ -30,7 +30,7 @@ public class IrcClient {
                 .replaceAll("\u0004", "^K"); // colour 2
     }
 
-    private EventLoopGroup group = new NioEventLoopGroup(2);
+    private EventLoopGroup group = new NioEventLoopGroup(4);
     ChannelGroup connections = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     public EventLoopGroup getGroup() {
