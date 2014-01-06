@@ -71,7 +71,7 @@ public class Urban implements CommandListener, InitListener {
             if (lastdata != null && !lastdata.isEmpty()) {
                 message.sendChatf("%s: %s", message.getHostmask().getNick(), lastdata);
             } else {
-                message.sendChatf("%s: There was an error last time retrieving the definition for %s, please try again in %d minute(s)", message.getHostmask().getNick(),
+                message.sendChatf("%s: There was an error last time retrieving the definition for %s, please try again in %d minute(s)", message.getHostmask().getNick(), term,
                         TimeUnit.MILLISECONDS.toMinutes(TIMEOUT - (System.currentTimeMillis() - lastquery)));
             }
         } else {
