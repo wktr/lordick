@@ -25,6 +25,9 @@ public class Markov implements CommandListener, MessageListener, InitListener {
         try {
             connection = client.getDatabaseConnection();
             connection.createStatement().executeUpdate("create table if not exists markov (seed_a TEXT, seed_b TEXT, seed_c TEXT, unique(seed_a, seed_b, seed_c) on conflict ignore)");
+            connection.createStatement().executeUpdate("ATTACH DATABASE ':memory:' AS mem");
+            connection.createStatement().executeUpdate("create table if not exists mem.markov (seed_a TEXT, seed_b TEXT, seed_c TEXT, unique(seed_a, seed_b, seed_c) on conflict ignore)");
+            connection.createStatement().executeUpdate("insert into mem.markov (seed_a, seed_b, seed_c) select seed_a, seed_b, seed_c from markov");
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -97,7 +100,7 @@ public class Markov implements CommandListener, MessageListener, InitListener {
                         message.sendChat(markov);
                     }
                 }
-            } else if (message.getHostmask().getNick().equalsIgnoreCase("exemplar") && message.getHostmask().getHost().endsWith(".xxx")) {
+            } else if (message.getHostmask().getNick().equalsIgnoreCase("exemplar")) {
                 if (cmd.equalsIgnoreCase("replyrate")) {
                     if (m.group(2) == null) {
                         message.sendChatf("Reply rate is: %d%%", replyrate);
@@ -146,7 +149,12 @@ public class Markov implements CommandListener, MessageListener, InitListener {
 
     private void markov_insert(String seed1, String seed2, String seed3) {
         try {
-            PreparedStatement ps = connection.prepareStatement("insert into markov (seed_a, seed_b, seed_c) values (?, ?, ?)");
+            PreparedStatement ps = connection.prepareStatement("insert into mem.markov (seed_a, seed_b, seed_c) values (?, ?, ?)");
+            ps.setString(1, seed1);
+            ps.setString(2, seed2);
+            ps.setString(3, seed3);
+            ps.executeUpdate();
+            ps = connection.prepareStatement("insert into markov (seed_a, seed_b, seed_c) values (?, ?, ?)");
             ps.setString(1, seed1);
             ps.setString(2, seed2);
             ps.setString(3, seed3);
@@ -171,11 +179,11 @@ public class Markov implements CommandListener, MessageListener, InitListener {
         try {
             PreparedStatement ps;
             if (seed2 == null) {
-                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a = ? or seed_b = ? COLLATE NOCASE order by random() limit 1");
+                ps = connection.prepareStatement("select seed_a, seed_b from mem.markov where seed_a = ? or seed_b = ? COLLATE NOCASE order by random() limit 1");
                 ps.setString(1, seed1);
                 ps.setString(2, seed1);
             } else {
-                ps = connection.prepareStatement("select seed_a, seed_b from markov where seed_a in (?, ?) or seed_b in (?, ?) COLLATE NOCASE order by random() limit 1");
+                ps = connection.prepareStatement("select seed_a, seed_b from mem.markov where seed_a in (?, ?) or seed_b in (?, ?) COLLATE NOCASE order by random() limit 1");
                 ps.setString(1, seed1);
                 ps.setString(2, seed2);
                 ps.setString(3, seed1);
@@ -195,7 +203,7 @@ public class Markov implements CommandListener, MessageListener, InitListener {
 
     private String markov_generate() {
         try {
-            PreparedStatement ps = connection.prepareStatement("select seed_a, seed_b from markov order by random() limit 1");
+            PreparedStatement ps = connection.prepareStatement("select seed_a, seed_b from mem.markov order by random() limit 1");
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 String found1 = rs.getString(1);
@@ -283,7 +291,7 @@ public class Markov implements CommandListener, MessageListener, InitListener {
 
     private String markov_nextseed(String seed1, String seed2) {
         try {
-            PreparedStatement ps = connection.prepareStatement("select seed_c from markov where seed_a = ? and seed_b = ? order by random() limit 1");
+            PreparedStatement ps = connection.prepareStatement("select seed_c from mem.markov where seed_a = ? and seed_b = ? order by random() limit 1");
             ps.setString(1, seed1);
             ps.setString(2, seed2);
             ResultSet rs = ps.executeQuery();
@@ -298,7 +306,7 @@ public class Markov implements CommandListener, MessageListener, InitListener {
 
     private String markov_previousseed(String seed2, String seed3) {
         try {
-            PreparedStatement ps = connection.prepareStatement("select seed_a from markov where seed_b = ? and seed_c = ? order by random() limit 1");
+            PreparedStatement ps = connection.prepareStatement("select seed_a from mem.markov where seed_b = ? and seed_c = ? order by random() limit 1");
             ps.setString(1, seed2);
             ps.setString(2, seed3);
             ResultSet rs = ps.executeQuery();
