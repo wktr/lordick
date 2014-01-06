@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 public class IrcHandler extends SimpleChannelInboundHandler<String> {
 
     // http://mybuddymichael.com/writings/a-regular-expression-for-irc-messages.html
-    public static Pattern IRC_PATTERN = Pattern.compile("^(?:[:](\\S+) )?(\\S+)(?: (?!:)(.+?))?(?: [:](.+))?$");
+    public static Pattern IRC_PATTERN = Pattern.compile("^(?:[:](\\S+) )?(\\S+)(?: (?!:)(.+?))?(?: [:](.*))?$");
 
     private List<IrcMessageHandler> messageHandlers = new CopyOnWriteArrayList<IrcMessageHandler>();
 
