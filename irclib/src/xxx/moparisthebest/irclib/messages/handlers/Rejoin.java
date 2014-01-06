@@ -11,10 +11,17 @@ import java.util.concurrent.TimeUnit;
 public class Rejoin implements IrcMessageHandler {
     @Override
     public boolean shouldHandle(IrcMessage message) {
+        if (message.getCommand().equalsIgnoreCase("474")) {
+            return true;
+        }
         UserProperties up = message.getServer().getUserProperties();
-        return (message.getCommand().equalsIgnoreCase("PART") && message.getHostmask().getNick().equalsIgnoreCase(up.getNickname()))
-                || (message.getCommand().equalsIgnoreCase("KICK") && message.getTargetParams().equalsIgnoreCase(up.getNickname()))
-                || message.getCommand().equalsIgnoreCase("474");
+        String nick = message.getTargetParams();
+        if (nick == null || nick.isEmpty()) {
+            return false;
+        }
+        boolean ispart = message.getCommand().equalsIgnoreCase("PART");
+        boolean iskick = message.getCommand().equalsIgnoreCase("KICK");
+        return (ispart || iskick) && nick.equals(up.getNickname());
     }
 
     @Override
