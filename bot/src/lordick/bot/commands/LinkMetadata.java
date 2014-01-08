@@ -179,7 +179,7 @@ public class LinkMetadata implements MessageListener, InitListener {
             }
             return;
         } else if (code >= 400) {
-            result.append("[SITE] : ").append(conn.getResponseMessage());
+            result.append("[SITE] Error: ").append(conn.getResponseMessage());
             return;
         }
         final CountDownLatch latch = new CountDownLatch(1);
