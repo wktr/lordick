@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.UnknownHostException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.sql.Statement;
@@ -141,6 +142,8 @@ public class LinkMetadata implements MessageListener, InitListener {
                 conn.setRequestProperty("Cookie", "mpr_agree4=yes");
             }
             parseConnection(result, conn);
+        } catch (UnknownHostException ignored) {
+            // Nope. Nobody really cares.
         } catch (Exception e) {
             result.append("Error getting url data: ").append(e);
         } finally {
@@ -176,7 +179,7 @@ public class LinkMetadata implements MessageListener, InitListener {
             }
             return;
         } else if (code >= 400) {
-            result.append("[SITE] Error: ").append(conn.getResponseMessage());
+            result.append("[SITE] : ").append(conn.getResponseMessage());
             return;
         }
         final CountDownLatch latch = new CountDownLatch(1);
